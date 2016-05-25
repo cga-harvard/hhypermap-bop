@@ -78,6 +78,9 @@
   -->
   <codecFactory class="solr.SchemaCodecFactory"/>
 
+  <!-- BOP: We prefer to have the schema declared, not manipulated with an API. -->
+  <schemaFactory class="ClassicIndexSchemaFactory" />
+
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Index Config - These settings control low-level behavior of indexing
        Most example settings here show the default value, but are commented
