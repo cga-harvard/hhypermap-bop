@@ -1,21 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!--
-  ~ Copyright 2016 President and Fellows of Harvard College
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~     http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
 
-<!-- 
+<!--
      For more details about configurations options that may appear in
      this file, see http://wiki.apache.org/solr/SolrConfigXml. 
 -->
@@ -60,9 +45,9 @@
        solr.RAMDirectoryFactory is memory based, not
        persistent, and doesn't work with replication.
     -->
-  <directoryFactory name="DirectoryFactory" 
+  <directoryFactory name="DirectoryFactory"
                     class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}">
-  </directoryFactory> 
+  </directoryFactory>
 
   <!-- The CodecFactory for defining the format of the inverted index.
        The default implementation is SchemaCodecFactory, which is the official Lucene
@@ -79,7 +64,7 @@
   <codecFactory class="solr.SchemaCodecFactory"/>
 
   <!-- BOP: We prefer to have the schema declared, not manipulated with an API. -->
-  <schemaFactory class="ClassicIndexSchemaFactory" />
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Index Config - These settings control low-level behavior of indexing
@@ -120,7 +105,7 @@
          IndexWriter to write its info stream to solr's log. By default,
          this is enabled here, and controlled through log4j.properties.
       -->
-     <infoStream>true</infoStream>
+    <infoStream>true</infoStream>
   </indexConfig>
 
 
@@ -133,7 +118,7 @@
 
        For more details see http://wiki.apache.org/solr/SolrJmx
     -->
-  <jmx />
+  <jmx/>
   <!-- If you want to connect to a particular server, specify the
        agentId 
     -->
@@ -162,7 +147,7 @@
       <str name="dir">${solr.ulog.dir:}</str>
       <int name="numVersionBuckets">${solr.ulog.numVersionBuckets:65536}</int>
     </updateLog>
- 
+
     <!-- AutoCommit
 
          Perform a hard commit automatically under certain conditions.
@@ -184,22 +169,22 @@
          If the updateLog is enabled, then it's highly recommended to
          have some sort of hard autoCommit to limit the log size.
       -->
-     <autoCommit> 
-       <maxTime>${solr.autoCommit.maxTime:15000}</maxTime> 
-       <openSearcher>false</openSearcher> 
-     </autoCommit>
+    <autoCommit>
+      <maxTime>${solr.autoCommit.maxTime:15000}</maxTime>
+      <openSearcher>false</openSearcher>
+    </autoCommit>
 
     <!-- softAutoCommit is like autoCommit except it causes a
          'soft' commit which only ensures that changes are visible
          but does not ensure that data is synced to disk.  This is
          faster and more near-realtime friendly than a hard commit.
       -->
-     <autoSoftCommit> 
-       <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime> 
-     </autoSoftCommit>
+    <autoSoftCommit>
+      <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
+    </autoSoftCommit>
 
   </updateHandler>
-  
+
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Query section - these settings control query time things like caches
        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
@@ -265,10 +250,10 @@
                       to occupy
      -->
     <queryResultCache class="solr.LRUCache"
-                     size="512"
-                     initialSize="512"
-                     autowarmCount="0"/>
-   
+                      size="512"
+                      initialSize="512"
+                      autowarmCount="0"/>
+
     <!-- Document Cache
 
          Caches Lucene Document objects (the stored fields for each
@@ -279,14 +264,14 @@
                    size="512"
                    initialSize="512"
                    autowarmCount="0"/>
-    
-    <!-- custom cache currently used by block join --> 
+
+    <!-- custom cache currently used by block join -->
     <cache name="perSegFilter"
-      class="solr.search.LRUCache"
-      size="10"
-      initialSize="0"
-      autowarmCount="10"
-      regenerator="solr.NoOpRegenerator" />
+           class="solr.search.LRUCache"
+           size="10"
+           initialSize="0"
+           autowarmCount="10"
+           regenerator="solr.NoOpRegenerator"/>
 
     <!-- Lazy Field Loading
 
@@ -298,21 +283,21 @@
     -->
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
 
-   <!-- Result Window Size
+    <!-- Result Window Size
 
-        An optimization for use with the queryResultCache.  When a search
-        is requested, a superset of the requested number of document ids
-        are collected.  For example, if a search for a particular query
-        requests matching documents 10 through 19, and queryWindowSize is 50,
-        then documents 0 through 49 will be collected and cached.  Any further
-        requests in that range can be satisfied via the cache.  
-     -->
-   <queryResultWindowSize>20</queryResultWindowSize>
+         An optimization for use with the queryResultCache.  When a search
+         is requested, a superset of the requested number of document ids
+         are collected.  For example, if a search for a particular query
+         requests matching documents 10 through 19, and queryWindowSize is 50,
+         then documents 0 through 49 will be collected and cached.  Any further
+         requests in that range can be satisfied via the cache.
+      -->
+    <queryResultWindowSize>20</queryResultWindowSize>
 
-   <!-- Maximum number of documents to cache for any entry in the
-        queryResultCache. 
-     -->
-   <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
+    <!-- Maximum number of documents to cache for any entry in the
+         queryResultCache.
+      -->
+    <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 
     <!-- Use Cold Searcher
 
@@ -356,7 +341,7 @@
        handleSelect="true" is not recommended for new users, but is the default
        for backwards compatibility
     -->
-  <requestDispatcher handleSelect="false" >
+  <requestDispatcher handleSelect="false">
     <!-- Request Parsing
 
          These settings indicate how Solr Requests may be parsed, and
@@ -386,8 +371,8 @@
          should make sure your system has some authentication before
          using enableRemoteStreaming="true"
 
-      --> 
-    <requestParsers enableRemoteStreaming="true" 
+      -->
+    <requestParsers enableRemoteStreaming="true"
                     multipartUploadLimitInKB="2048000"
                     formdataUploadLimitInKB="2048"
                     addHttpRequestToContext="false"/>
@@ -399,7 +384,7 @@
          The options below instruct Solr not to output any HTTP Caching
          related headers
       -->
-    <httpCaching never304="true" />
+    <httpCaching never304="true"/>
 
   </requestDispatcher>
 
@@ -435,21 +420,21 @@
     <!-- default values for query parameters can be specified, these
          will be overridden by parameters in the request
       -->
-     <lst name="defaults">
-       <str name="echoParams">explicit</str>
-       <int name="rows">10</int>
-     </lst>
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <int name="rows">10</int>
+    </lst>
 
-    </requestHandler>
+  </requestHandler>
 
   <!-- A request handler that returns indented JSON by default -->
   <requestHandler name="/query" class="solr.SearchHandler">
-     <lst name="defaults">
-       <str name="echoParams">explicit</str>
-       <str name="wt">json</str>
-       <str name="indent">true</str>
-       <str name="df">text</str>
-     </lst>
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <str name="wt">json</str>
+      <str name="indent">true</str>
+      <str name="df">text</str>
+    </lst>
   </requestHandler>
 
   <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell">
@@ -476,9 +461,9 @@
            field value analysis will be marked as "matched" for every
            token that is produces by the query analysis
    -->
-  <requestHandler name="/analysis/field" 
+  <requestHandler name="/analysis/field"
                   startup="lazy"
-                  class="solr.FieldAnalysisRequestHandler" />
+                  class="solr.FieldAnalysisRequestHandler"/>
 
 
   <!-- Document Analysis Handler
@@ -511,18 +496,17 @@
     true, all field tokens that match the query tokens will be marked
     as a "match". 
   -->
-  <requestHandler name="/analysis/document" 
-                  class="solr.DocumentAnalysisRequestHandler" 
-                  startup="lazy" />
+  <requestHandler name="/analysis/document"
+                  class="solr.DocumentAnalysisRequestHandler"
+                  startup="lazy"/>
 
   <!-- Echo the request contents back to the client -->
-  <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" >
+  <requestHandler name="/debug/dump" class="solr.DumpRequestHandler">
     <lst name="defaults">
-     <str name="echoParams">explicit</str> 
-     <str name="echoHandler">true</str>
+      <str name="echoParams">explicit</str>
+      <str name="echoHandler">true</str>
     </lst>
   </requestHandler>
-  
 
 
   <!-- Search Components
@@ -552,10 +536,10 @@
 
   <!-- A request handler for demonstrating the terms component -->
   <requestHandler name="/terms" class="solr.SearchHandler" startup="lazy">
-     <lst name="defaults">
+    <lst name="defaults">
       <bool name="terms">true</bool>
       <bool name="distrib">false</bool>
-    </lst>     
+    </lst>
     <arr name="components">
       <str>terms</str>
     </arr>
