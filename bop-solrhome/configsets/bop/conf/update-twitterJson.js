@@ -3,7 +3,10 @@
   the example solrconfig.xml and must be uncommented to be enabled.
 */
 
-var JavaLong = Java.type('java.lang.Long');
+var Long = Java.type('java.lang.Long');
+var BigInteger = Java.type('java.math.BigInteger');
+
+var BIG_INT_LONG_MIN = BigInteger.valueOf(Long.MIN_VALUE); // big negative number
 
 var COORD_FIELD = params.get("coordField");
 
@@ -11,9 +14,10 @@ function processAdd(cmd) {
 
   var doc = cmd.solrDoc;  // org.apache.solr.common.SolrInputDocument
 
-  // parse ID as an unsigned long into signed long
+  // parse ID as an unsigned long, convert to sortable signed long (0 becomes Long.MIN_VALUE)
   var idFld = doc.getField("id");
-  idFld.setValue(JavaLong.parseUnsignedLong(idFld.getValue()), 1.0);
+  idFld.setValue(new BigInteger(idFld.getValue()).add(BIG_INT_LONG_MIN), 1.0);
+  // note: reverse: (BigInteger.valueOf(longValue) - BigInteger.valueOf(Long.MIN_VALUE)).toString()
 
   // combine first coordinate value (degrees longitude) with second (degrees latitude) into one "lat, lon" value
   var coordFld = doc.getField(COORD_FIELD);

@@ -35,6 +35,12 @@
       <version>${solr.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.locationtech.spatial4j</groupId>
+      <artifactId>spatial4j</artifactId>
+      <version>0.6</version>
+    </dependency>
+
     <!-- Solr test framework must come before Solr core -->
     <!--<dependency>-->
       <!--<groupId>org.apache.solr</groupId>-->

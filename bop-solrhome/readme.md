@@ -12,11 +12,20 @@ Explicitly upload a config set (also to update it when it changes)
 
   solr6 zk -upconfig -n bop -d bop-solrhome/configsets/bop/conf/ -z localhost:9983
   
+Reload a collection using this config (obviously only after it's there)
+
+  curl -XPOST http://localhost:8983/solr/admin/collections -F action=RELOAD -F name=bop
+
 # Experimentation
 
 Create the "bop" collection WITHOUT time sharding (purely for testing).
 
   solr6 create_collection -c bop -n bop
+  
+Add an alias, "tweets"
+
+  curl -XPOST http://localhost:8983/solr/admin/collections \
+  -F action=CREATEALIAS -F name=tweets -F collections=bop
 
 Loading data from a zip of twitter JSON.  Notice we use a named request
 handler to make doing this easier so we don't need to specify as many

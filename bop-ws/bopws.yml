@@ -1,2 +1,2 @@
-solrZkHost: localhost
+solrZkHost: localhost:9983
 solrCollection: bop

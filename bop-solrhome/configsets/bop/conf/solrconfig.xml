@@ -75,6 +75,8 @@
        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
   <indexConfig>
 
+    <!-- BOP TODO index-sort on id -->
+
     <!-- LockFactory 
 
          This option specifies which Lucene LockFactory implementation
@@ -184,7 +186,6 @@
     </autoSoftCommit>
 
   </updateHandler>
-
 
   <!-- for posting Twitter's JSON -->
   <requestHandler name="/update/twitterJson" class="solr.UpdateRequestHandler">
@@ -313,7 +314,8 @@
          especially if the skipped fields are large compressed text
          fields.
     -->
-    <enableLazyFieldLoading>true</enableLazyFieldLoading>
+    <!-- BOP: we always want the whole thing, basically -->
+    <enableLazyFieldLoading>false</enableLazyFieldLoading>
 
     <!-- Result Window Size
 
@@ -472,6 +474,23 @@
   <initParams path="/query,/select,/tvrh,/elevate,/spell">
     <lst name="defaults">
       <str name="df">text</str>
+    </lst>
+  </initParams>
+
+  <requestHandler name="/select/bop/search" class="solr.SearchHandler" />
+  <requestHandler name="/select/bop/export" class="solr.SearchHandler" />
+
+  <initParams name="bop" path="/select/bop/*">
+    <lst name="defaults">
+      <str name="echoParams">none</str>
+
+      <str name="defType">edismax</str>
+      <str name="q.alt">*:*</str>
+      <str name="qf">text</str>
+      <str name="mm">100%</str>
+
+      <int name="facet.mincount">1</int>
+
     </lst>
   </initParams>
 
