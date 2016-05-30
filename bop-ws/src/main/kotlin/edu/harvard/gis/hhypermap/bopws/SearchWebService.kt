@@ -17,11 +17,13 @@
 package edu.harvard.gis.hhypermap.bopws
 
 import com.codahale.metrics.annotation.Timed
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.response.QueryResponse
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrException
+import org.apache.solr.common.util.NamedList
 import org.locationtech.spatial4j.shape.Point
 import org.locationtech.spatial4j.shape.Rectangle
 import java.math.BigInteger
@@ -32,16 +34,20 @@ import javax.validation.constraints.Size
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 
+//  Solr fields:
+private val ID_FIELD = "id"
+private val TIME_FILTER_FIELD = "created_at"
+private val TIME_SORT_FIELD = "id" // re-use 'id' which is a tweet id which is timestamp based
+private val GEO_FILTER_FIELD = "coord_rpt"
+private val GEO_HEATMAP_FIELD = "coord_rpt" // and assume units="degrees" here
+private val GEO_SORT_FIELD = "coord" // and assume units="kilomters" here
+
+private fun String.parseGeoBox() = parseGeoBox(this)
+
 @Path("/tweets")
 @Produces(MediaType.APPLICATION_JSON)
 class SearchWebService(
         val solrClient: SolrClient) {
-
-  val ID_FIELD = "id"
-  val TIME_FILTER_FIELD = "created_at"
-  val TIME_SORT_FIELD = "id" // re-use 'id' which is a tweet id which is timestamp based
-  val GEO_FILTER_FIELD = "coord_rpt"
-  val GEO_SORT_FIELD = "coord"
 
   @Path("/search")
   @GET
@@ -53,15 +59,18 @@ class SearchWebService(
           // TODO more, q.geoPath q.lang, ...
 
           @QueryParam("d.docs.limit") @DefaultValue("0") @Min(0) @Max(1000) aDocsLimit: Int,
-          @QueryParam("d.docs.sort") @DefaultValue("score")                 aDocsSort: DocSortEnum
+          @QueryParam("d.docs.sort") @DefaultValue("score")                 aDocsSort: DocSortEnum,
+
+          @QueryParam("a.hm.limit") @DefaultValue("0") @Min(0) @Max(10000) aHmLimit: Int,
+          @QueryParam("a.hm.gridLevel") @Min(1)           aHmGridLevel: Int?,
+          @QueryParam("a.hm.filter") @Size(min = 1)       aHmFilter: String?
+
           ): SearchResponse {
     // note: The DropWizard *Param classes have questionable value with Kotlin given null types so
     //  we don't use them
 
     val solrQuery = SolrQuery()
     solrQuery.requestHandler = "/select/bop/search"
-
-    fun String.parseGeoBox() = parseGeoBox(this)
 
     // -- Query Constraints 'q' and 'fq' (query and filter queries)
     // q.text:
@@ -95,7 +104,12 @@ class SearchWebService(
     solrQuery.rows = aDocsLimit
 
     if (solrQuery.rows > 0) {
-      setSort(aDocsSort, qGeoRect?.center, qText != null, solrQuery)
+      requestSort(aDocsSort, qGeoRect?.center, qText != null, solrQuery)
+    }
+
+    // Heatmap
+    if (aHmLimit > 0) {
+      requestHeatmap(aHmLimit, aHmFilter ?: qGeo, aHmGridLevel, solrQuery)
     }
 
     // -- EXECUTE
@@ -104,7 +118,7 @@ class SearchWebService(
     //  since that machine is different than the others
     //solrQuery.set("_route_", "realtime") TODO
 
-    val solrResp: QueryResponse?
+    val solrResp: QueryResponse
     try {
       solrResp = solrClient.query(solrQuery);
     } catch(e: SolrException) {
@@ -114,11 +128,12 @@ class SearchWebService(
     return SearchResponse(
             aMatchDocs = solrResp.results.numFound,
             // if didn't ask for docs, we return no list at all
-            dDocs = if (solrQuery.rows > 0) solrResp.results.map { docToMap(it) } else null
+            dDocs = if (solrQuery.rows > 0) solrResp.results.map { docToMap(it) } else null,
+            heatmap = SearchResponse.Heatmap.fromSolr(solrResp)
     )
   }
 
-  private fun setSort(aDocsSort: DocSortEnum, distPoint: Point?, hasQuery: Boolean, solrQuery: SolrQuery) {
+  private fun requestSort(aDocsSort: DocSortEnum, distPoint: Point?, hasQuery: Boolean, solrQuery: SolrQuery) {
     val sort = if (aDocsSort == DocSortEnum.score && hasQuery) {//score requires query string
       DocSortEnum.time // fall back on time even if asked for score (should we error instead?)
     } else {
@@ -138,6 +153,29 @@ class SearchWebService(
         }
         solrQuery.set("pt", toLatLon(distPoint.center))
       }
+    }
+  }
+
+  private fun requestHeatmap(aHmLimit: Int, aHmFilter: String?, aHmGridLevel: Int?, solrQuery: SolrQuery) {
+    solrQuery.setFacet(true)
+    solrQuery.set("facet.heatmap", GEO_HEATMAP_FIELD)
+    val hmRectStr = aHmFilter ?: "[-90,-180 TO 90,180]"
+    solrQuery.set("facet.heatmap.geom", hmRectStr);
+    if (aHmGridLevel != null) {
+      // note: aHmLimit is ignored in this case
+      solrQuery.set("facet.heatmap.gridLevel", aHmGridLevel)
+    } else {
+      // Calculate distErr that will approximate aHmLimit many cells as an upper bound
+      val hmRect: Rectangle = hmRectStr.parseGeoBox()
+      val degreesSideLen = (hmRect.width + hmRect.height) / 2.0 // side len of square (in degrees units)
+      val cellsSideLen = Math.sqrt(aHmLimit.toDouble()) // side len of square (in target cell units)
+      val cellSideLenInDegrees = degreesSideLen / cellsSideLen * 2
+      // Note: the '* 2' is complicated.  Basically distErr is a maximum error (actual error may
+      //   be smaller). This has the effect of choosing the minimum number of cells for a target
+      //   resolution.  So *2 assumes quad tree (double side length to next level)
+      //   and will tend to choose a more coarse level.
+      // Note: assume units="degrees" on this field type
+      solrQuery.set("facet.heatmap.distErr", cellSideLenInDegrees.toFloat().toString())
     }
   }
 
@@ -162,10 +200,40 @@ class SearchWebService(
           (BigInteger.valueOf(value as Long) - BigInteger.valueOf(Long.MIN_VALUE)).toString()
 
   data class SearchResponse (
-          @get:com.fasterxml.jackson.annotation.JsonProperty("a.matchDocs") val aMatchDocs : Long,
-          @get:com.fasterxml.jackson.annotation.JsonProperty("d.docs") val dDocs : List<Map<String,Any>>?
+          @get:JsonProperty("a.matchDocs") val aMatchDocs : Long,
+          @get:JsonProperty("d.docs") val dDocs : List<Map<String,Any>>?,
+          @get:JsonProperty("a.hm") val heatmap: Heatmap?
           //...
-  )
+  ) {
+    data class Heatmap(
+            val gridLevel: Int,
+            val rows: Int,
+            val columns: Int,
+            val minX: Double, val maxX: Double, val minY: Double, val maxY: Double,
+            //TODO api document implication of nulls in this grid
+            val counts_ints2D: List<List<Int>>?,
+            val projection: String
+    ) {
+        companion object {
+          @Suppress("UNCHECKED_CAST")
+          fun fromSolr(solrResp: QueryResponse): Heatmap? {
+            val hmNl = solrResp.response
+                    .findRecursive("facet_counts", "facet_heatmaps", GEO_HEATMAP_FIELD) as NamedList<Any>?
+                    ?: return null
+            // TODO consider doing this via a reflection utility; must it be Kotlin specific?
+            return Heatmap(gridLevel = hmNl.get("gridLevel") as Int,
+                    rows = hmNl.get("rows") as Int,
+                    columns = hmNl.get("columns") as Int,
+                    minX = hmNl.get("minX") as Double,
+                    maxX = hmNl.get("maxX") as Double,
+                    minY = hmNl.get("minY") as Double,
+                    maxY = hmNl.get("maxY") as Double,
+                    counts_ints2D = hmNl.get("counts_ints2D") as List<List<Int>>?,
+                    projection = "EPSG:4326") // wgs84.  TODO switch to web mercator?
+          }
+        }
+    }
+  }
 
   enum class DocSortEnum {score, time, distance}
 

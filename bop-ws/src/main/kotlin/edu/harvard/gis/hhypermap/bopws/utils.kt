@@ -21,7 +21,7 @@ import org.locationtech.spatial4j.shape.Point
 import org.locationtech.spatial4j.shape.Rectangle
 import javax.ws.rs.WebApplicationException
 
-val SOLR_RANGE_PATTERN = Regex("\\[(\\S+) TO (\\S+)\\]").toPattern()
+val SOLR_RANGE_PATTERN = Regex("""\[(\S+) TO (\S+)\]""").toPattern()
 
 fun parseSolrRangeAsPair(str: String): Pair<String, String> {
   val matcher = SOLR_RANGE_PATTERN.matcher(str)
@@ -34,7 +34,8 @@ fun parseSolrRangeAsPair(str: String): Pair<String, String> {
 
 // Spatial stuff:
 
-val spatial4jShapeFactory = SpatialContext.GEO.shapeFactory
+val SPATIAL4J_CTX = SpatialContext.GEO
+val spatial4jShapeFactory = SPATIAL4J_CTX.shapeFactory
 
 fun toLatLon(center: Point): String {
   return "${center.y},${center.x}"

@@ -345,8 +345,16 @@
     For more information about this and other Spatial fields new to Solr 4, see:
     http://wiki.apache.org/solr/SolrAdaptersForLuceneSpatial4
   -->
+  <!-- BOP: Optimized for heatmaps, and we use it for filtering too (although we'd like to use new
+  Lucene stuff instead for filtering once there are Solr adapters).
+  For more heatmap resolution choices we use a quad tree.  To make the cells square, we use a
+  square worldBounds (although now we can't span the dateline since this necessitates geo=false).
+  Once FlexPrefixTree is available, we needn't set geo=false, and we can have fewer levels at the
+  top especially to save space.  5 meter precision (specified in units of degrees).
+   TODO want FlexPrefixTree when it's ready -->
   <fieldType name="geo_rpt_5m" class="solr.SpatialRecursivePrefixTreeFieldType"
-             geo="true" distErrPct="0.025" maxDistErr="0.005" distanceUnits="kilometers"/>
+             geo="false" worldBounds="ENVELOPE(-180, 180, 180, -180)" prefixTree="packedQuad"
+             distErrPct="0.025" maxDistErr="0.000045" distanceUnits="degrees" />
 
 
 </schema>
