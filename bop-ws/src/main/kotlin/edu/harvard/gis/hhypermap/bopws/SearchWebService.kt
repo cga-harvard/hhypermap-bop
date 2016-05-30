@@ -17,16 +17,18 @@
 package edu.harvard.gis.hhypermap.bopws
 
 import com.codahale.metrics.annotation.Timed
-import io.dropwizard.jersey.params.NonEmptyStringParam
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.response.QueryResponse
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrException
+import org.locationtech.spatial4j.shape.Point
+import org.locationtech.spatial4j.shape.Rectangle
 import java.math.BigInteger
 import java.util.*
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
+import javax.validation.constraints.Size
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 
@@ -45,38 +47,44 @@ class SearchWebService(
   @GET
   @Timed
   fun search(
-          @QueryParam("q.text") qText: NonEmptyStringParam,
-          @QueryParam("q.time") qTime: NonEmptyStringParam,
-          @QueryParam("q.geo") qGeo: NonEmptyStringParam,
+          @QueryParam("q.text") @Size(min = 1) qText: String?,
+          @QueryParam("q.time") @Size(min = 1) qTime: String?,
+          @QueryParam("q.geo")  @Size(min = 1) qGeo: String?,
           // TODO more, q.geoPath q.lang, ...
 
           @QueryParam("d.docs.limit") @DefaultValue("0") @Min(0) @Max(1000) aDocsLimit: Int,
-          @QueryParam("d.docs.sort") @DefaultValue("score") aDocsSort: DocSortEnum
-
-      ): SearchResponse {
+          @QueryParam("d.docs.sort") @DefaultValue("score")                 aDocsSort: DocSortEnum
+          ): SearchResponse {
+    // note: The DropWizard *Param classes have questionable value with Kotlin given null types so
+    //  we don't use them
 
     val solrQuery = SolrQuery()
     solrQuery.requestHandler = "/select/bop/search"
 
+    fun String.parseGeoBox() = parseGeoBox(this)
+
     // -- Query Constraints 'q' and 'fq' (query and filter queries)
     // q.text:
-    qText.get().ifPresent {
-      solrQuery.query = it
+    if (qText != null) {
+      solrQuery.query = qText
       // TODO will wind up in 'fq'?  If not we should use fq if no relevance sort
     }
 
     // q.time
-    qTime.get().ifPresent {
-      parseSolrRangeAsPair(it)// will throw if fails to parse
-      solrQuery.addFilterQuery("{!field f=$TIME_FILTER_FIELD}$it")
+    if (qTime != null) {
+      parseSolrRangeAsPair(qTime)// will throw if fails to parse
+      solrQuery.addFilterQuery("{!field f=$TIME_FILTER_FIELD}$qTime")
       // TODO determine which subset of shards to use ("shards" param)
       // TODO add caching header if we didn't need to contact the realtime shard? expire at 1am
     }
 
     // q.geo
-    qGeo.get().ifPresent {
-      parseGeoBox(it) // will throw if fails to parse.
-      solrQuery.addFilterQuery("$GEO_FILTER_FIELD:$it")// lucene syntax
+    val qGeoRect: Rectangle?
+    if (qGeo != null) {
+      qGeoRect = qGeo.parseGeoBox()
+      solrQuery.addFilterQuery("$GEO_FILTER_FIELD:$qGeo")// lucene query syntax
+    } else {
+      qGeoRect = null
     }
 
     //TODO q.geoPath
@@ -84,11 +92,10 @@ class SearchWebService(
     //TODO q.lang
 
     // -- Docs
-
     solrQuery.rows = aDocsLimit
 
     if (solrQuery.rows > 0) {
-      setSort(aDocsSort, qGeo, qText, solrQuery)
+      setSort(aDocsSort, qGeoRect?.center, qText != null, solrQuery)
     }
 
     // -- EXECUTE
@@ -111,8 +118,8 @@ class SearchWebService(
     )
   }
 
-  private fun setSort(aDocsSort: DocSortEnum, qGeo: NonEmptyStringParam, qText: NonEmptyStringParam, solrQuery: SolrQuery) {
-    val sort = if (aDocsSort == DocSortEnum.score && qText.get().isPresent == false) {//score requires query string
+  private fun setSort(aDocsSort: DocSortEnum, distPoint: Point?, hasQuery: Boolean, solrQuery: SolrQuery) {
+    val sort = if (aDocsSort == DocSortEnum.score && hasQuery) {//score requires query string
       DocSortEnum.time // fall back on time even if asked for score (should we error instead?)
     } else {
       aDocsSort
@@ -126,10 +133,10 @@ class SearchWebService(
       DocSortEnum.distance -> {
         solrQuery.addSort("geodist()", SolrQuery.ORDER.asc)
         solrQuery.set("sfield", GEO_SORT_FIELD)
-        if (qGeo.get().isPresent == false) {
+        if (distPoint == null) {
           throw WebApplicationException("Can't sort by distance without q.geo", 400)
         }
-        solrQuery.set("pt", toLatLon(parseGeoBox(qGeo.get().get()).center))
+        solrQuery.set("pt", toLatLon(distPoint.center))
       }
     }
   }
