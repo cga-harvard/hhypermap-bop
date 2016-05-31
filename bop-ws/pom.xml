@@ -23,18 +23,49 @@
 
   <dependencies>
 
+    <!-- Dropwizard: Java web-service framework of frameworks -->
     <dependency>
       <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-core</artifactId>
       <version>1.0.0-rc2</version>
     </dependency>
 
+    <!-- Swagger: web-service documentation/definition -->
+    <!--    https://github.com/smoketurner/dropwizard-swagger -->
+    <dependency>
+      <groupId>com.smoketurner</groupId>
+      <artifactId>dropwizard-swagger</artifactId>
+      <version>1.0.0-rc2-1</version>
+    </dependency>
+
+    <!-- SolrJ: Apache Solr search client -->
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-solrj</artifactId>
       <version>${solr.version}</version>
+      <exclusions>
+        <!-- let us inherit logging deps/versions from dropwizard -->
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>jcl-over-slf4j</artifactId>
+        </exclusion>
+        <!-- not needed -->
+        <exclusion>
+          <groupId>org.codehaus.woodstox</groupId>
+          <artifactId>woodstox-core-asl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.woodstox</groupId>
+          <artifactId>stax2-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
+    <!-- Spatial4j: convenient shape utilities -->
     <dependency>
       <groupId>org.locationtech.spatial4j</groupId>
       <artifactId>spatial4j</artifactId>

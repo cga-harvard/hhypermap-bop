@@ -18,6 +18,9 @@ package edu.harvard.gis.hhypermap.bopws
 
 import com.codahale.metrics.annotation.Timed
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.response.QueryResponse
@@ -29,11 +32,13 @@ import org.locationtech.spatial4j.shape.Rectangle
 import java.math.BigInteger
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.util.*
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
+import javax.validation.constraints.Pattern
 import javax.validation.constraints.Size
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
@@ -44,36 +49,95 @@ private val TIME_FILTER_FIELD = "created_at"
 private val TIME_SORT_FIELD = "id" // re-use 'id' which is a tweet id which is timestamp based
 private val GEO_FILTER_FIELD = "coord_rpt"
 private val GEO_HEATMAP_FIELD = "coord_rpt" // and assume units="degrees" here
-private val GEO_SORT_FIELD = "coord" // and assume units="kilomters" here
+private val GEO_SORT_FIELD = "coord" // and assume units="kilometers" here
 
 private fun String.parseGeoBox() = parseGeoBox(this)
 
-@Path("/tweets")
+@Api
+@Path("/tweets") // TODO make path configurable == Collection
 @Produces(MediaType.APPLICATION_JSON)
 class SearchWebService(
         val solrClient: SolrClient) {
 
   @Path("/search")
+  @ApiOperation(value = "Search/analytics endpoint; highly configurable. Not for bulk doc retrieval.",
+          notes = """The q.* parameters qre query/constraints that limit the matching documents.
+ The d.* params control returning the documents. The a.* params are faceting/aggregations on a
+ field of the documents.  The *.limit params limit how many top values/docs to return.  Some of
+ the formatting and response structure has strong similarities with Apache Solr, unsurprisingly.""")
   @GET
   @Timed
   fun search(
-          @QueryParam("q.text") @Size(min = 1) qText: String?,
-          @QueryParam("q.time") @Size(min = 1) qTime: String?,
-          @QueryParam("q.geo")  @Size(min = 1) qGeo: String?,
+          @QueryParam("q.text") @Size(min = 1)
+          @ApiParam("Constrains docs by keyword search query.")
+          qText: String?,
+
+          @QueryParam("q.time") @Pattern(regexp = """\[(\S+) TO (\S+)\]""")
+          @ApiParam("Constrains docs by time range.  Either side can be '*' to signify" +
+                  " open-ended. Otherwise it should either be in this format:" +
+                  " 2013-03-01 or 2013-03-01T00:00:00 (both are equivalent). UTC time zone is" +
+                  " implied.") // TODO add separate TZ param?
+          qTime: String?,
+
+          @QueryParam("q.geo") @Pattern(regexp = """\[(\S+,\S+) TO (\S+,\S+)\]""")
+          @ApiParam("A rectangular geospatial filter in decimal degrees going from the lower-left" +
+                  " to the upper-right.  The coordinates are in lat,lon format.")
+          qGeo: String?,
+
           // TODO more, q.geoPath q.lang, ...
 
-          @QueryParam("d.docs.limit") @DefaultValue("0") @Min(0) @Max(1000) aDocsLimit: Int,
-          @QueryParam("d.docs.sort") @DefaultValue("score")                 aDocsSort: DocSortEnum,
+          @QueryParam("d.docs.limit") @DefaultValue("0") @Min(0) @Max(1000)
+          @ApiParam("How many documents to return in the search results.")
+          aDocsLimit: Int,
 
-          @QueryParam("a.time.limit") @DefaultValue("0") @Min(0) @Max(10000)  aTimeLimit: Int,
-          @QueryParam("a.time.gap") @Size(min = 1)                            aTimeGap: String?,
-          @QueryParam("a.time.filter") @Size(min = 1)                         aTimeFilter: String?,
+          @QueryParam("d.docs.sort") @DefaultValue("score")
+          @ApiParam("How to order the documents before returning the top X." +
+                  " 'score' is keyword search relevancy. 'time' is time descending." +
+                  " 'distance' is the distance between the doc and the middle of q.geo.")
+          aDocsSort: DocSortEnum,
 
-          @QueryParam("a.hm.limit") @DefaultValue("0") @Min(0) @Max(10000)  aHmLimit: Int,
-          @QueryParam("a.hm.gridLevel") @Min(1)                             aHmGridLevel: Int?,
-          @QueryParam("a.hm.filter") @Size(min = 1)                         aHmFilter: String?
+          @QueryParam("a.time.limit") @DefaultValue("0") @Min(0) @Max(1000)
+          @ApiParam("Non-0 triggers time/date range faceting. This value is the" +
+                  " maximum number of time ranges to return when a.time.gap is unspecified." +
+                  " This is a soft maximum; less will usually be returned." +
+                  " Note that a.time.gap effectively ignores this value." +
+                  " TODO WARNING: not implemented yet but must use non-0." +
+                  " See Solr docs for more details on the query/response format.")
+          aTimeLimit: Int,
 
-          ): SearchResponse {
+          @QueryParam("a.time.gap") @Pattern(regexp = """\+(\d+)(DAY|HOUR|MINUTE)S?""")
+          @ApiParam("The consecutive time interval/gap for each time range.  Ignores a.time.limit")
+          aTimeGap: String?,
+
+          @QueryParam("a.time.filter") @Pattern(regexp = """\[(\S+) TO (\S+)\]""")
+          @ApiParam("From what time range to divide by a.time.gap into intervals.  Defaults to" +
+                  " q.time and otherwise 90 days.")
+          aTimeFilter: String?,
+
+          @QueryParam("a.hm.limit") @DefaultValue("0") @Min(0) @Max(10000)
+          @ApiParam("Non-0 triggers heatmap/grid faceting.  This number is a soft maximum on the" +
+                  "number of cells it should have." +
+                  " There may be as few as 1/4th this number in return.  Note that a.hm.gridLevel" +
+                  " can effectively ignore this value." +
+                  " The response heatmap contains a counts grid that can be null or contain null" +
+                  " rows when all its values would be 0.  " +
+                  " See Solr docs for more details on the response format.")
+          aHmLimit: Int,
+
+          @QueryParam("a.hm.gridLevel") @Min(1)
+          @ApiParam("To explicitly specify the grid level, e.g. to let a user ask for greater or" +
+                  " courser resolution than the most recent request.  Ignores a.hm.limit.")
+          aHmGridLevel: Int?,
+
+          @QueryParam("a.hm.filter") @Pattern(regexp = """\[(\S+,\S+) TO (\S+,\S+)\]""")
+          @ApiParam("From what region to plot the heatmap. Defaults to q.geo or otherwise the" +
+                  " world.")
+          aHmFilter: String?
+
+          // TODO a.text
+          // TODO debug timings
+
+  ): SearchResponse {
     // note: The DropWizard *Param classes have questionable value with Kotlin given null types so
     //  we don't use them
 
@@ -89,6 +153,7 @@ class SearchWebService(
 
     // q.time
     if (qTime != null) {
+      // TODO parse the times in our formats then normalize
       parseSolrRangeAsPair(qTime)// will throw if fails to parse
       solrQuery.addFilterQuery("{!field f=$TIME_FILTER_FIELD}$qTime")
       // TODO determine which subset of shards to use ("shards" param)
@@ -189,7 +254,7 @@ class SearchWebService(
   private fun parseDateTime(str: String): Instant? {
     return when {
       str == "*" -> null // open-ended
-      str.last() == 'Z' -> Instant.parse(str) // "2016-05-15T00:00:00Z"
+      str.contains('T') -> LocalDateTime.parse(str).toInstant(ZoneOffset.UTC) // "2016-05-15T00:00:00"
       else -> LocalDate.parse(str).atStartOfDay(ZoneOffset.UTC).toInstant() // "2016-05-15"
     }
   }

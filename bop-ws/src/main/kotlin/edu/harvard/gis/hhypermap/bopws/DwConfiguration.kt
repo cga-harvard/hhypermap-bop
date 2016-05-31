@@ -18,6 +18,7 @@ package edu.harvard.gis.hhypermap.bopws
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.dropwizard.Configuration
+import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.impl.CloudSolrClient
 import org.apache.solr.client.solrj.impl.HttpSolrClient
@@ -27,6 +28,9 @@ import org.hibernate.validator.constraints.NotEmpty
  * Dropwizard Configuration
  */
 class DwConfiguration : Configuration() {
+
+  @JsonProperty("swagger")
+  var swaggerBundleConfiguration: SwaggerBundleConfiguration? = null
 
   //TODO could use a factory approach; see Configuration.DefaultServerFactory
 

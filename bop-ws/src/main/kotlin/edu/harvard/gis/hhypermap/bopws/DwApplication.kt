@@ -17,7 +17,10 @@
 package edu.harvard.gis.hhypermap.bopws
 
 import io.dropwizard.Application
+import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
+import io.federecio.dropwizard.swagger.SwaggerBundle
+import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
 
 /**
  * Dropwizard main entry for our web-service
@@ -30,4 +33,13 @@ class DwApplication : Application<DwConfiguration>() {
     environment.jersey().register(SearchWebService(solrClient))
   }
 
+  override fun initialize(bootstrap: Bootstrap<DwConfiguration>) {
+    // Swagger:
+    bootstrap.addBundle(
+            object : SwaggerBundle<DwConfiguration>() {
+              override fun getSwaggerBundleConfiguration(configuration: DwConfiguration): SwaggerBundleConfiguration?
+                      = configuration.swaggerBundleConfiguration
+            }
+    )
+  }
 }
