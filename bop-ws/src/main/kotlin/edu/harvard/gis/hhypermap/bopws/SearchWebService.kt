@@ -27,6 +27,10 @@ import org.apache.solr.common.util.NamedList
 import org.locationtech.spatial4j.shape.Point
 import org.locationtech.spatial4j.shape.Rectangle
 import java.math.BigInteger
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.*
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
@@ -61,9 +65,13 @@ class SearchWebService(
           @QueryParam("d.docs.limit") @DefaultValue("0") @Min(0) @Max(1000) aDocsLimit: Int,
           @QueryParam("d.docs.sort") @DefaultValue("score")                 aDocsSort: DocSortEnum,
 
-          @QueryParam("a.hm.limit") @DefaultValue("0") @Min(0) @Max(10000) aHmLimit: Int,
-          @QueryParam("a.hm.gridLevel") @Min(1)           aHmGridLevel: Int?,
-          @QueryParam("a.hm.filter") @Size(min = 1)       aHmFilter: String?
+          @QueryParam("a.time.limit") @DefaultValue("0") @Min(0) @Max(10000)  aTimeLimit: Int,
+          @QueryParam("a.time.gap") @Size(min = 1)                            aTimeGap: String?,
+          @QueryParam("a.time.filter") @Size(min = 1)                         aTimeFilter: String?,
+
+          @QueryParam("a.hm.limit") @DefaultValue("0") @Min(0) @Max(10000)  aHmLimit: Int,
+          @QueryParam("a.hm.gridLevel") @Min(1)                             aHmGridLevel: Int?,
+          @QueryParam("a.hm.filter") @Size(min = 1)                         aHmFilter: String?
 
           ): SearchResponse {
     // note: The DropWizard *Param classes have questionable value with Kotlin given null types so
@@ -107,7 +115,12 @@ class SearchWebService(
       requestSort(aDocsSort, qGeoRect?.center, qText != null, solrQuery)
     }
 
-    // Heatmap
+    // a.time
+    if (aTimeLimit > 0) {
+      requestDateFacets(aTimeLimit, aTimeFilter ?: qTime, aTimeGap, solrQuery)
+    }
+
+    // a.hm
     if (aHmLimit > 0) {
       requestHeatmap(aHmLimit, aHmFilter ?: qGeo, aHmGridLevel, solrQuery)
     }
@@ -129,7 +142,8 @@ class SearchWebService(
             aMatchDocs = solrResp.results.numFound,
             // if didn't ask for docs, we return no list at all
             dDocs = if (solrQuery.rows > 0) solrResp.results.map { docToMap(it) } else null,
-            heatmap = SearchResponse.Heatmap.fromSolr(solrResp)
+            aTime = SearchResponse.DateFacet.fromSolr(solrResp),
+            aHm = SearchResponse.Heatmap.fromSolr(solrResp)
     )
   }
 
@@ -153,6 +167,30 @@ class SearchWebService(
         }
         solrQuery.set("pt", toLatLon(distPoint.center))
       }
+    }
+  }
+
+  private fun requestDateFacets(aTimeLimit: Int, aTimeFilter: String?, aTimeGap: String?, solrQuery: SolrQuery) {
+    val (startStr, endStr) = parseSolrRangeAsPair(aTimeFilter ?: "[* TO *]")
+    val startInst = parseDateTime(startStr)
+    val endInst = parseDateTime(endStr)
+
+    // TODO auto calculate gap from aTimeLimit
+    val gapStr = aTimeGap ?: "+1DAY"
+
+    val now = Instant.now()
+    //TODO round start & end str's to the gap unit but only when it's non '*'
+    solrQuery.addDateRangeFacet(TIME_FILTER_FIELD,
+            Date.from(startInst ?: now.minus(90, ChronoUnit.DAYS)),
+            Date.from(endInst ?: now),
+            gapStr)
+  }
+
+  private fun parseDateTime(str: String): Instant? {
+    return when {
+      str == "*" -> null // open-ended
+      str.last() == 'Z' -> Instant.parse(str) // "2016-05-15T00:00:00Z"
+      else -> LocalDate.parse(str).atStartOfDay(ZoneOffset.UTC).toInstant() // "2016-05-15"
     }
   }
 
@@ -200,11 +238,34 @@ class SearchWebService(
           (BigInteger.valueOf(value as Long) - BigInteger.valueOf(Long.MIN_VALUE)).toString()
 
   data class SearchResponse (
-          @get:JsonProperty("a.matchDocs") val aMatchDocs : Long,
-          @get:JsonProperty("d.docs") val dDocs : List<Map<String,Any>>?,
-          @get:JsonProperty("a.hm") val heatmap: Heatmap?
+          @get:JsonProperty("a.matchDocs") val aMatchDocs: Long,
+          @get:JsonProperty("d.docs") val dDocs: List<Map<String,Any>>?,
+          @get:JsonProperty("a.time") val aTime: DateFacet?,
+          @get:JsonProperty("a.hm") val aHm: Heatmap?
           //...
   ) {
+
+    data class FacetValue(val value: String, val count: Long)
+
+    data class DateFacet( // TODO fix Date type
+            val start: String,//Date
+            val end: String,//Date
+            val gap: String,
+            val counts: List<FacetValue>
+    ) {
+      companion object {
+        fun fromSolr(solrResp: QueryResponse): DateFacet? {
+          val rng = solrResp.facetRanges?.firstOrNull { it.name == TIME_FILTER_FIELD } ?: return null
+          return DateFacet(
+                  start = (rng.start as Date).toInstant().toString(),
+                  end = (rng.end as Date).toInstant().toString(),
+                  gap = rng.gap as String,
+                  counts = rng.counts.map { FacetValue(it.value, it.count.toLong()) }
+          )
+        }
+      }
+    }
+
     data class Heatmap(
             val gridLevel: Int,
             val rows: Int,
