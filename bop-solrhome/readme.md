@@ -29,7 +29,8 @@ Add an alias, "tweets"
 
 Loading data from a zip of twitter JSON.  Notice we use a named request
 handler to make doing this easier so we don't need to specify as many
-params.  Note need at least Solr 6.0.1 to post large files from stdin.
+params.  Note need Solr 6.1 on client to post large files from stdin
+(regardless of server Solr version).
 
 ```
 unzip -p results_mar_11_20_2013.zip | \

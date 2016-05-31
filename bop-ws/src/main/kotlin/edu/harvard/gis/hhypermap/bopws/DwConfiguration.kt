@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import io.dropwizard.Configuration
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.impl.CloudSolrClient
+import org.apache.solr.client.solrj.impl.HttpSolrClient
 import org.hibernate.validator.constraints.NotEmpty
 
 /**
@@ -29,15 +30,29 @@ class DwConfiguration : Configuration() {
 
   //TODO could use a factory approach; see Configuration.DefaultServerFactory
 
-  @NotEmpty @JsonProperty
+  @JsonProperty
   var solrZkHost: String? = null
+
+  /** For experimental purposes. Mutually exclusive with solrZkHost. */
+  @JsonProperty
+  var solrUrl: String? = null
 
   @NotEmpty @JsonProperty
   var solrCollection: String? = null
 
   fun newSolrClient() : SolrClient {
-    return CloudSolrClient(solrZkHost).apply {
-      defaultCollection = solrCollection
+    if (solrZkHost != null) {
+      if (solrUrl != null) {
+        throw Exception("solrUrl is mutually exclusive with solrZkHost")
+      }
+      return CloudSolrClient(solrZkHost).apply {
+        defaultCollection = solrCollection
+      }
+    } else {
+      var url = solrUrl
+      if (solrCollection != null)
+        url += "/$solrCollection"
+      return HttpSolrClient(url)
     }
   }
 
