@@ -43,3 +43,5 @@ class DwApplication : Application<DwConfiguration>() {
     )
   }
 }
+
+fun main(args: Array<String>) = DwApplication().run(*args)

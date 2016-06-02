@@ -18,7 +18,7 @@
   <url>http://maven.apache.org</url>
 
   <properties>
-    <mainClass>edu.harvard.gis.hhypermap.bopws.MainKt</mainClass>
+    <mainClass>edu.harvard.gis.hhypermap.bopws.DwApplicationKt</mainClass>
   </properties>
 
   <dependencies>
