@@ -27,7 +27,7 @@
     <dependency>
       <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-core</artifactId>
-      <version>1.0.0-rc2</version>
+      <version>${dropwizard.version}</version>
     </dependency>
 
     <!-- Swagger: web-service documentation/definition -->
@@ -35,7 +35,7 @@
     <dependency>
       <groupId>com.smoketurner</groupId>
       <artifactId>dropwizard-swagger</artifactId>
-      <version>1.0.0-rc2-1</version>
+      <version>${dropwizard.version}-1</version>
     </dependency>
 
     <!-- SolrJ: Apache Solr search client -->
@@ -86,6 +86,13 @@
       <!--<version>${solr.version}</version>-->
       <!--<scope>test</scope>-->
     <!--</dependency>-->
+
+    <dependency>
+      <groupId>io.dropwizard</groupId>
+      <artifactId>dropwizard-testing</artifactId>
+      <version>${dropwizard.version}</version>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 
