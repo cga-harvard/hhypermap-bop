@@ -153,9 +153,10 @@ class SearchWebService(
 
     // q.time
     if (qTime != null) {
-      // TODO parse the times in our formats then normalize
-      parseSolrRangeAsPair(qTime)// will throw if fails to parse
-      solrQuery.addFilterQuery("{!field f=$TIME_FILTER_FIELD}$qTime")
+      val (leftInst, rightInst) = parseDateTimeRange(qTime) // parses multiple formats
+      val leftStr = leftInst?.toString() ?: "*" // normalize to Solr
+      val rightStr = rightInst?.toString() ?: "*" // normalize to Solr
+      solrQuery.addFilterQuery("{!field f=$TIME_FILTER_FIELD}[$leftStr TO $rightStr]")
       // TODO determine which subset of shards to use ("shards" param)
       // TODO add caching header if we didn't need to contact the realtime shard? expire at 1am
     }
@@ -214,7 +215,7 @@ class SearchWebService(
 
   private fun requestSort(aDocsSort: DocSortEnum, distPoint: Point?, hasQuery: Boolean, solrQuery: SolrQuery) {
     val sort = if (aDocsSort == DocSortEnum.score && hasQuery) {//score requires query string
-      DocSortEnum.time // fall back on time even if asked for score (should we error instead?)
+      DocSortEnum.score // fall back on time even if asked for score (should we error instead?)
     } else {
       aDocsSort
     }
@@ -236,19 +237,19 @@ class SearchWebService(
   }
 
   private fun requestDateFacets(aTimeLimit: Int, aTimeFilter: String?, aTimeGap: String?, solrQuery: SolrQuery) {
-    val (startStr, endStr) = parseSolrRangeAsPair(aTimeFilter ?: "[* TO *]")
-    val startInst = parseDateTime(startStr)
-    val endInst = parseDateTime(endStr)
-
+    val (startInst, endInst) = parseDateTimeRange(aTimeFilter)
     // TODO auto calculate gap from aTimeLimit
     val gapStr = aTimeGap ?: "+1DAY"
-
     val now = Instant.now()
-    //TODO round start & end str's to the gap unit but only when it's non '*'
     solrQuery.addDateRangeFacet(TIME_FILTER_FIELD,
             Date.from(startInst ?: now.minus(90, ChronoUnit.DAYS)),
             Date.from(endInst ?: now),
             gapStr)
+  }
+
+  private fun parseDateTimeRange(aTimeFilter: String?): Pair<Instant?, Instant?> {
+    val (startStr, endStr) = parseSolrRangeAsPair(aTimeFilter ?: "[* TO *]")
+    return Pair(parseDateTime(startStr), parseDateTime(endStr))
   }
 
   private fun parseDateTime(str: String): Instant? {
