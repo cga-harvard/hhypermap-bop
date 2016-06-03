@@ -136,17 +136,25 @@ class SearchWebServiceTest {
 
   // GEO
 
-  @Test fun testGeoFilter()
-          = reqJson(uri("/tweets/search", "q.geo" to "[42,-80 TO 50,-60]")).let {
-    assertEquals(2, it["a.matchDocs"].asInt())
+  @Test fun testGeoFilter() {
+    reqJson(uri("/tweets/search", "q.geo" to "[42,-80 TO 50,-60]")).let {
+      assertEquals(2, it["a.matchDocs"].asInt())
+    }
+    // bad spatial (-800 lon)
+    assertReq400(uri("/tweets/search",
+            "q.geo" to "[30,-800 TO 50,-60]"))
   }
 
-  @Test fun testGeoDistOrder()
-          = reqJson(uri("/tweets/search",
-          "q.geo" to "[30,-80 TO 50,-60]", "d.docs.limit" to "1", "d.docs.sort" to "distance")).let {
-    // middle point is 40,-70; box grabs all docs
-    assertEquals(3, it["a.matchDocs"].asInt(), it.toString())
-    assertEquals("Apple fruit", it["d.docs"][0]["text"].asText(), it.toString())
+  @Test fun testGeoDistOrder() {
+    reqJson(uri("/tweets/search",
+            "q.geo" to "[30,-80 TO 50,-60]", "d.docs.limit" to "1", "d.docs.sort" to "distance")).let {
+      // middle point is 40,-70; box grabs all docs
+      assertEquals(3, it["a.matchDocs"].asInt(), it.toString())
+      assertEquals("Apple fruit", it["d.docs"][0]["text"].asText(), it.toString())
+    }
+    // bad spatial (-800 lon)
+    assertReq400(uri("/tweets/search",
+            "q.geo" to "[30,-800 TO 50,-60]", "d.docs.limit" to "1", "d.docs.sort" to "distance"))
   }
 
   @Test fun testGeoHeatmapFacets() {

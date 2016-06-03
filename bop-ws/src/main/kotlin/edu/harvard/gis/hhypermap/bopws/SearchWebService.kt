@@ -56,6 +56,61 @@ private fun String.parseGeoBox() = parseGeoBox(this)
 class SearchWebService(
         val solrClient: SolrClient) {
 
+  // note: I'd prefer immutable; Jersey seems to handle it but Swagger is confused (NPE)
+  data class ConstraintsParams(
+    @set:QueryParam("q.text") @set:Size(min = 1)
+    @set:ApiParam("Constrains docs by keyword search query.")
+    var qText: String? = null,
+
+    @set:QueryParam("q.time") @set:Pattern(regexp = """\[(\S+) TO (\S+)\]""")
+    @set:ApiParam("Constrains docs by time range.  Either side can be '*' to signify" +
+            " open-ended. Otherwise it should either be in this format:" +
+            " 2013-03-01 or 2013-03-01T00:00:00 (both are equivalent). UTC time zone is" +
+            " implied.") // TODO add separate TZ param?
+    var qTime: String? = null,
+
+    @set:QueryParam("q.geo") @set:Pattern(regexp = """\[(\S+,\S+) TO (\S+,\S+)\]""")
+    @set:ApiParam("A rectangular geospatial filter in decimal degrees going from the lower-left" +
+            " to the upper-right.  The coordinates are in lat,lon format.")
+    var qGeo: String? = null
+
+    // TODO more, q.geoPath q.lang, ...
+  ) {
+
+    val qGeoRect: Rectangle? by lazy {
+      qGeo?.parseGeoBox()
+    }
+
+    fun applyToSolrQuery(solrQuery: SolrQuery) {
+      // q.text:
+      if (qText != null) {
+        solrQuery.query = qText
+        // TODO will wind up in 'fq'?  If not we should use fq if no relevance sort
+      }
+
+      // q.time
+      if (qTime != null) {
+        val (leftInst, rightInst) = parseDateTimeRange(qTime) // parses multiple formats
+        val leftStr = leftInst?.toString() ?: "*" // normalize to Solr
+        val rightStr = rightInst?.toString() ?: "*" // normalize to Solr
+        solrQuery.addFilterQuery("{!field f=$TIME_FILTER_FIELD}[$leftStr TO $rightStr]")
+        // TODO determine which subset of shards to use ("shards" param)
+        // TODO add caching header if we didn't need to contact the realtime shard? expire at 1am
+      }
+
+      // q.geo
+      qGeo?.let {
+        qGeoRect
+        solrQuery.addFilterQuery("$GEO_FILTER_FIELD:$it")// lucene query syntax
+        it.parseGeoBox()
+      }
+
+      //TODO q.geoPath
+
+      //TODO q.lang
+    }
+  }
+
   @Path("/search")
   @ApiOperation(value = "Search/analytics endpoint; highly configurable. Not for bulk doc retrieval.",
           notes = """The q.* parameters qre query/constraints that limit the matching documents.
@@ -65,23 +120,9 @@ class SearchWebService(
   @GET
   @Timed
   fun search(
-          @QueryParam("q.text") @Size(min = 1)
-          @ApiParam("Constrains docs by keyword search query.")
-          qText: String?,
 
-          @QueryParam("q.time") @Pattern(regexp = """\[(\S+) TO (\S+)\]""")
-          @ApiParam("Constrains docs by time range.  Either side can be '*' to signify" +
-                  " open-ended. Otherwise it should either be in this format:" +
-                  " 2013-03-01 or 2013-03-01T00:00:00 (both are equivalent). UTC time zone is" +
-                  " implied.") // TODO add separate TZ param?
-          qTime: String?,
-
-          @QueryParam("q.geo") @Pattern(regexp = """\[(\S+,\S+) TO (\S+,\S+)\]""")
-          @ApiParam("A rectangular geospatial filter in decimal degrees going from the lower-left" +
-                  " to the upper-right.  The coordinates are in lat,lon format.")
-          qGeo: String?,
-
-          // TODO more, q.geoPath q.lang, ...
+          @BeanParam
+          qConstraints: ConstraintsParams,
 
           @QueryParam("d.docs.limit") @DefaultValue("0") @Min(0) @Max(1000)
           @ApiParam("How many documents to return in the search results.")
@@ -142,51 +183,25 @@ class SearchWebService(
     val solrQuery = SolrQuery()
     solrQuery.requestHandler = "/select/bop/search"
 
-    // -- Query Constraints 'q' and 'fq' (query and filter queries)
-    // q.text:
-    if (qText != null) {
-      solrQuery.query = qText
-      // TODO will wind up in 'fq'?  If not we should use fq if no relevance sort
-    }
-
-    // q.time
-    if (qTime != null) {
-      val (leftInst, rightInst) = parseDateTimeRange(qTime) // parses multiple formats
-      val leftStr = leftInst?.toString() ?: "*" // normalize to Solr
-      val rightStr = rightInst?.toString() ?: "*" // normalize to Solr
-      solrQuery.addFilterQuery("{!field f=$TIME_FILTER_FIELD}[$leftStr TO $rightStr]")
-      // TODO determine which subset of shards to use ("shards" param)
-      // TODO add caching header if we didn't need to contact the realtime shard? expire at 1am
-    }
-
-    // q.geo
-    val qGeoRect: Rectangle?
-    if (qGeo != null) {
-      qGeoRect = qGeo.parseGeoBox()
-      solrQuery.addFilterQuery("$GEO_FILTER_FIELD:$qGeo")// lucene query syntax
-    } else {
-      qGeoRect = null
-    }
-
-    //TODO q.geoPath
-
-    //TODO q.lang
+    qConstraints.applyToSolrQuery(solrQuery)
 
     // -- Docs
     solrQuery.rows = aDocsLimit
 
     if (solrQuery.rows > 0) {
-      requestSort(aDocsSort, qGeoRect?.center, qText != null, solrQuery)
+      requestSort(aDocsSort, qConstraints.qGeoRect?.center, qConstraints.qText != null, solrQuery)
     }
+
+    // Aggregations/Facets
 
     // a.time
     if (aTimeLimit > 0) {
-      requestDateFacets(aTimeLimit, aTimeFilter ?: qTime, aTimeGap, solrQuery)
+      requestDateFacets(aTimeLimit, aTimeFilter ?: qConstraints.qTime, aTimeGap, solrQuery)
     }
 
     // a.hm
     if (aHmLimit > 0) {
-      requestHeatmap(aHmLimit, aHmFilter ?: qGeo, aHmGridLevel, solrQuery)
+      requestHeatmap(aHmLimit, aHmFilter ?: qConstraints.qGeo, aHmGridLevel, solrQuery)
     }
 
     // -- EXECUTE
