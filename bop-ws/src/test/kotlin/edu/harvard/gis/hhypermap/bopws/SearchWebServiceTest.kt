@@ -39,6 +39,7 @@ class SearchWebServiceTest {
     val solrClient = HttpSolrClient("http://localhost:8983/solr/bop-tests") // collection must exist already
 
     @JvmField @ClassRule val resources = ResourceTestRule.builder()
+            .addProvider(DwApplication.DTPExceptionMapper)
             .addResource(SearchWebService(solrClient)).build()
 
     @JvmStatic @BeforeClass fun beforeClass() {
@@ -93,6 +94,7 @@ class SearchWebServiceTest {
     reqJson(uri("/tweets/search", "q.time" to "[2015-04-03T00:00:00 TO *]")).let {
       assertEquals(1, it["a.matchDocs"].asInt())
     }
+    assertReq400(uri("/tweets/search", "q.time" to "[2015-04-03T00:00:00Z TO *]")) // 'Z' bad format
   }
 
   @Test fun testTimeOrder()
@@ -101,19 +103,35 @@ class SearchWebServiceTest {
   }
 
   @Test fun testTimeFacets() {
-    val uri = uri("/tweets/search", "a.time.limit" to "1000", "a.time.gap" to "+1DAY",
-            "a.time.filter" to "[2015-04-01 TO 2015-04-03]")
-    reqJson(uri)["a.time"].let {
-      assertEquals("+1DAY", it.get("gap").textValue())
+    reqJson(uri("/tweets/search", "a.time.limit" to "1000", "a.time.gap" to "P1D",
+            "a.time.filter" to "[2015-04-01 TO 2015-04-03]"))["a.time"].let {
+      assertEquals("P1D", it.get("gap").textValue())
       assertEquals(2, it["counts"].size())
       assertEquals(1, it["counts"][0]["count"].asInt())
       assertEquals(1, it["counts"][1]["count"].asInt())
     }
     // just change the gap
-    reqJson(uri.queryParam("a.time.gap", "+1HOUR"))["a.time"].let {
-      assertEquals("+1DAY", it.get("gap").textValue())
+    reqJson(uri("/tweets/search", "a.time.limit" to "1000", "a.time.gap" to "PT1H",
+            "a.time.filter" to "[2015-04-01 TO 2015-04-03]"))["a.time"].let {
+      assertEquals("PT1H", it.get("gap").textValue())
       assertEquals(2, it["counts"].size())
     }
+  }
+
+  @Test fun testTimeFacetsComputeGap() {
+    // test no gap; guess days
+    fun assertGap(expectGap: String, start: String, end: String, limit: Int = 100) {
+      reqJson(uri("/tweets/search", "a.time.limit" to limit.toString(),
+              "a.time.filter" to "[$start TO $end]"))["a.time"].let {
+        assertEquals(Gap.parseISO8601(expectGap), Gap.parseISO8601(it.get("gap").textValue()))
+      }
+    }
+    assertGap("PT1H", "2015-04-01", "2015-04-02")// 2 days -> 1 hour gap
+    assertGap("P1D", "2015-04-01", "2015-04-20")// 20 days -> 1 day gap
+    assertGap("P7D", "2015-04-01", "2015-05-10")// >30 days -> 1 week gap
+    assertGap("P7D", "2015-01-01", "2015-12-31")// 360 days / 100 limit -> 1 week gap still (not 4d)
+    assertGap("P72D", "2015-01-01", "2015-12-26", limit =  5)// ~360 days / 5 limit -> 72 days
+    assertGap("P1D", "2015-04-01", "2015-04-02", limit = 5)// small limit; don't choose hours
   }
 
   // GEO
@@ -151,10 +169,10 @@ class SearchWebServiceTest {
     }
   }
 
-  fun uri(path: String, vararg queryParams: Pair<String,String>): UriBuilder
+  private fun uri(path: String, vararg queryParams: Pair<String,String>): UriBuilder
     = UriBuilder.fromPath(path).apply { for ((n,v) in queryParams) queryParam(n, v) }
 
-  fun reqJson(uriBuilder: UriBuilder): JsonNode {
+  private fun reqJson(uriBuilder: UriBuilder): JsonNode {
     val rsp: Response = resources.client().target(uriBuilder).request().get() // HTTP GET
     val json = try {
       assert(200 == rsp.status, {"Bad Status: ${rsp.status}, entity: ${rsp.readEntity(Any::class.java)}"})
@@ -175,6 +193,23 @@ class SearchWebServiceTest {
       assertEquals(Math.min(dDocsLimit, json["a.matchDocs"].asInt()), json["d.docs"].size())
     } else {
       assertFalse(json.hasNonNull("d.docs"))
+    }
+    val aTimeLimit = queryParams["a.time.limit"]?.toInt()
+    if (aTimeLimit != null) {
+      queryParams["a.time.gap"]?.let {
+        assertEquals(Gap.parseISO8601(it), Gap.parseISO8601(json["a.time"]["gap"].textValue()))
+      }
+    } else {
+      assertFalse(json.hasNonNull("a.time"))
+    }
+  }
+
+  private fun assertReq400(uriBuilder: UriBuilder) {
+    val rsp: Response = resources.client().target(uriBuilder).request().get() // HTTP GET
+    try {
+      assertEquals(400, rsp.status, rsp.toString())
+    } finally {
+      rsp.close()
     }
   }
 

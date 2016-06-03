@@ -17,10 +17,15 @@
 package edu.harvard.gis.hhypermap.bopws
 
 import io.dropwizard.Application
+import io.dropwizard.jersey.errors.ErrorMessage
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import io.federecio.dropwizard.swagger.SwaggerBundle
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
+import java.time.format.DateTimeParseException
+import javax.ws.rs.core.Response
+import javax.ws.rs.ext.ExceptionMapper
+import javax.ws.rs.ext.Provider
 
 /**
  * Dropwizard main entry for our web-service
@@ -28,8 +33,13 @@ import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
 class DwApplication : Application<DwConfiguration>() {
 
   override fun run(configuration: DwConfiguration, environment: Environment) {
-    val solrClient = configuration.newSolrClient()
+    val solrClient = configuration.newSolrClient() // TODO close!
+
+    // register exception mapper
+    environment.jersey().register(DTPExceptionMapper)
+
     environment.healthChecks().register(DwHealthCheck.NAME, DwHealthCheck(solrClient))
+
     environment.jersey().register(SearchWebService(solrClient))
   }
 
@@ -41,6 +51,16 @@ class DwApplication : Application<DwConfiguration>() {
                       = configuration.swaggerBundleConfiguration
             }
     )
+  }
+
+  /** Map [DateTimeParseException] to 400 */
+  @Provider
+  object DTPExceptionMapper : ExceptionMapper<java.time.format.DateTimeParseException> {
+    override fun toResponse(exception: DateTimeParseException?): Response? =
+      Response.status(Response.Status.BAD_REQUEST)
+              .entity(ErrorMessage(Response.Status.BAD_REQUEST.statusCode, exception.toString()))
+              .build()
+
   }
 }
 

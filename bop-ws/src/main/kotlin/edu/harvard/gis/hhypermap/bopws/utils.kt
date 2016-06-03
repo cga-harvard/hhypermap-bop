@@ -19,6 +19,10 @@ package edu.harvard.gis.hhypermap.bopws
 import org.locationtech.spatial4j.context.SpatialContext
 import org.locationtech.spatial4j.shape.Point
 import org.locationtech.spatial4j.shape.Rectangle
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import javax.ws.rs.WebApplicationException
 
 val SOLR_RANGE_PATTERN = Regex("""\[(\S+) TO (\S+)\]""").toPattern()
@@ -31,6 +35,26 @@ fun parseSolrRangeAsPair(str: String): Pair<String, String> {
     throw WebApplicationException("Regex $SOLR_RANGE_PATTERN couldn't parse $str")
   }
 }
+
+// Time stuff
+
+fun parseDateTimeRange(aTimeFilter: String?): Pair<Instant?, Instant?> {
+  val (startStr, endStr) = parseSolrRangeAsPair(aTimeFilter ?: "[* TO *]")
+  return Pair(parseDateTime(startStr), parseDateTime(endStr)).apply {
+    if (first != null && second != null && (first as Instant).isAfter(second)) {
+      throw WebApplicationException("Start must come before End: $aTimeFilter", 400)
+    }
+  }
+}
+
+fun parseDateTime(str: String): Instant? {
+  return when {
+    str == "*" -> null // open-ended
+    str.contains('T') -> LocalDateTime.parse(str).toInstant(ZoneOffset.UTC) // "2016-05-15T00:00:00"
+    else -> LocalDate.parse(str).atStartOfDay(ZoneOffset.UTC).toInstant() // "2016-05-15"
+  }
+}
+
 
 // Spatial stuff:
 

@@ -30,10 +30,7 @@ import org.apache.solr.common.util.NamedList
 import org.locationtech.spatial4j.shape.Point
 import org.locationtech.spatial4j.shape.Rectangle
 import java.math.BigInteger
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.time.*
 import java.time.temporal.ChronoUnit
 import java.util.*
 import javax.validation.constraints.Max
@@ -99,14 +96,15 @@ class SearchWebService(
           @QueryParam("a.time.limit") @DefaultValue("0") @Min(0) @Max(1000)
           @ApiParam("Non-0 triggers time/date range faceting. This value is the" +
                   " maximum number of time ranges to return when a.time.gap is unspecified." +
-                  " This is a soft maximum; less will usually be returned." +
+                  " This is a soft maximum; less will usually be returned. A suggested value is" +
+                  " 100." +
                   " Note that a.time.gap effectively ignores this value." +
-                  " TODO WARNING: not implemented yet but must use non-0." +
                   " See Solr docs for more details on the query/response format.")
           aTimeLimit: Int,
 
-          @QueryParam("a.time.gap") @Pattern(regexp = """\+(\d+)(DAY|HOUR|MINUTE)S?""")
-          @ApiParam("The consecutive time interval/gap for each time range.  Ignores a.time.limit")
+          @QueryParam("a.time.gap") @Pattern(regexp = """P((\d+[YMWD])|(T\d+[HMS]))""")
+          @ApiParam("The consecutive time interval/gap for each time range.  Ignores a.time.limit." +
+                  "The format is based on a subset of the ISO-8601 duration format.", example = "P1D")
           aTimeGap: String?,
 
           @QueryParam("a.time.filter") @Pattern(regexp = """\[(\S+) TO (\S+)\]""")
@@ -237,27 +235,28 @@ class SearchWebService(
   }
 
   private fun requestDateFacets(aTimeLimit: Int, aTimeFilter: String?, aTimeGap: String?, solrQuery: SolrQuery) {
-    val (startInst, endInst) = parseDateTimeRange(aTimeFilter)
-    // TODO auto calculate gap from aTimeLimit
-    val gapStr = aTimeGap ?: "+1DAY"
     val now = Instant.now()
-    solrQuery.addDateRangeFacet(TIME_FILTER_FIELD,
-            Date.from(startInst ?: now.minus(90, ChronoUnit.DAYS)),
-            Date.from(endInst ?: now),
-            gapStr)
-  }
+    val (_startInst, _endInst) = parseDateTimeRange(aTimeFilter)
+    val startInst = _startInst ?: now.minus(90, ChronoUnit.DAYS)
+    val endInst = _endInst ?: now
 
-  private fun parseDateTimeRange(aTimeFilter: String?): Pair<Instant?, Instant?> {
-    val (startStr, endStr) = parseSolrRangeAsPair(aTimeFilter ?: "[* TO *]")
-    return Pair(parseDateTime(startStr), parseDateTime(endStr))
-  }
-
-  private fun parseDateTime(str: String): Instant? {
-    return when {
-      str == "*" -> null // open-ended
-      str.contains('T') -> LocalDateTime.parse(str).toInstant(ZoneOffset.UTC) // "2016-05-15T00:00:00"
-      else -> LocalDate.parse(str).atStartOfDay(ZoneOffset.UTC).toInstant() // "2016-05-15"
+    val rangeDuration = Duration.between(startInst, endInst)
+    if (rangeDuration.isNegative) {
+      throw WebApplicationException("date ordering problem: $aTimeFilter", 400)
     }
+
+    val gap = when (aTimeGap) {
+      null -> Gap.computeGap(rangeDuration, aTimeLimit)
+      else -> Gap.parseISO8601(aTimeGap)
+    }
+
+    // verify the gap provided won't have too many bars
+    if (rangeDuration.toMillis() / gap.toMillis() > 1000) {
+      throw WebApplicationException("Gap $aTimeGap is too small for this range $aTimeFilter")
+    }
+
+    solrQuery.addDateRangeFacet(TIME_FILTER_FIELD,
+            Date.from(startInst), Date.from(endInst), gap.toSolr())
   }
 
   private fun requestHeatmap(aHmLimit: Int, aHmFilter: String?, aHmGridLevel: Int?, solrQuery: SolrQuery) {
@@ -313,7 +312,7 @@ class SearchWebService(
 
     data class FacetValue(val value: String, val count: Long)
 
-    data class DateFacet( // TODO fix Date type
+    data class DateFacet( // TODO document/fix Date type
             val start: String,//Date
             val end: String,//Date
             val gap: String,
@@ -325,7 +324,7 @@ class SearchWebService(
           return DateFacet(
                   start = (rng.start as Date).toInstant().toString(),
                   end = (rng.end as Date).toInstant().toString(),
-                  gap = rng.gap as String,
+                  gap = Gap.parseSolr(rng.gap as String).toISO8601(),
                   counts = rng.counts.map { FacetValue(it.value, it.count.toLong()) }
           )
         }
@@ -364,6 +363,4 @@ class SearchWebService(
 
   enum class DocSortEnum {score, time, distance}
 
-
 }
-
