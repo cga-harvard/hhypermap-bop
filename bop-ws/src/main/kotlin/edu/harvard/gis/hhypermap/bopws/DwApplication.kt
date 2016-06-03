@@ -18,6 +18,7 @@ package edu.harvard.gis.hhypermap.bopws
 
 import io.dropwizard.Application
 import io.dropwizard.jersey.errors.ErrorMessage
+import io.dropwizard.lifecycle.Managed
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import io.federecio.dropwizard.swagger.SwaggerBundle
@@ -33,12 +34,16 @@ import javax.ws.rs.ext.Provider
 class DwApplication : Application<DwConfiguration>() {
 
   override fun run(configuration: DwConfiguration, environment: Environment) {
-    val solrClient = configuration.newSolrClient() // TODO close!
-
-    // register exception mapper
-    environment.jersey().register(DTPExceptionMapper)
+    // Manage Solr
+    val solrClient = configuration.newSolrClient()
+    environment.lifecycle().manage(object : Managed {
+      override fun start() { }
+      override fun stop() = solrClient.close()
+    })
 
     environment.healthChecks().register(DwHealthCheck.NAME, DwHealthCheck(solrClient))
+
+    environment.jersey().register(DTPExceptionMapper)
 
     environment.jersey().register(SearchWebService(solrClient))
   }
