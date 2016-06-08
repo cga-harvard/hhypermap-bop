@@ -32,7 +32,7 @@ fun parseSolrRangeAsPair(str: String): Pair<String, String> {
   if (matcher.matches()) {
     return Pair(matcher.group(1), matcher.group(2))
   } else {
-    throw WebApplicationException("Regex $SOLR_RANGE_PATTERN couldn't parse $str")
+    throw WebApplicationException("Regex $SOLR_RANGE_PATTERN couldn't parse $str", 400)
   }
 }
 

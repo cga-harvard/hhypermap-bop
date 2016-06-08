@@ -492,6 +492,9 @@
       <str name="mm">0%</str>
       <str name="q.op">AND</str>
 
+      <!-- BOP WARNING: this will be parsed by /export in the web service; modify with care -->
+      <str name="fl">id,created_at,coord,user_name,text</str>
+
       <int name="facet.mincount">1</int>
 
     </lst>

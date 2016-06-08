@@ -32,6 +32,9 @@ class DwConfiguration : Configuration() {
   @JsonProperty("swagger")
   var swaggerBundleConfiguration: SwaggerBundleConfiguration? = null
 
+  @JsonProperty
+  var jersey: Map<String, String>? = null
+
   //TODO could use a factory approach; see Configuration.DefaultServerFactory
 
   @JsonProperty

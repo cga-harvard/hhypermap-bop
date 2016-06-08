@@ -17,20 +17,24 @@
 package edu.harvard.gis.hhypermap.bopws
 
 import com.codahale.metrics.annotation.Timed
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
+import org.apache.commons.lang3.StringEscapeUtils
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.response.QueryResponse
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrException
 import org.apache.solr.common.util.NamedList
-import org.locationtech.spatial4j.shape.Point
 import org.locationtech.spatial4j.shape.Rectangle
+import java.io.OutputStream
+import java.io.OutputStreamWriter
 import java.math.BigInteger
-import java.time.*
+import java.time.Duration
+import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 import javax.validation.constraints.Max
@@ -39,8 +43,10 @@ import javax.validation.constraints.Pattern
 import javax.validation.constraints.Size
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
+import javax.ws.rs.core.StreamingOutput
 
-//  Solr fields:
+//  Solr fields: (TODO make configurable?)
 private val ID_FIELD = "id"
 private val TIME_FILTER_FIELD = "created_at"
 private val TIME_SORT_FIELD = "id" // re-use 'id' which is a tweet id which is timestamp based
@@ -52,7 +58,6 @@ private fun String.parseGeoBox() = parseGeoBox(this)
 
 @Api
 @Path("/tweets") // TODO make path configurable == Collection
-@Produces(MediaType.APPLICATION_JSON)
 class SearchWebService(
         val solrClient: SolrClient) {
 
@@ -77,7 +82,7 @@ class SearchWebService(
     // TODO more, q.geoPath q.lang, ...
   ) {
 
-    val qGeoRect: Rectangle? by lazy {
+    @get:JsonIgnore internal val qGeoRect: Rectangle? by lazy {
       qGeo?.parseGeoBox()
     }
 
@@ -118,6 +123,7 @@ class SearchWebService(
  field of the documents.  The *.limit params limit how many top values/docs to return.  Some of
  the formatting and response structure has strong similarities with Apache Solr, unsurprisingly.""")
   @GET
+  @Produces(MediaType.APPLICATION_JSON)
   @Timed
   fun search(
 
@@ -186,11 +192,7 @@ class SearchWebService(
     qConstraints.applyToSolrQuery(solrQuery)
 
     // -- Docs
-    solrQuery.rows = aDocsLimit
-
-    if (solrQuery.rows > 0) {
-      requestSort(aDocsSort, qConstraints.qGeoRect?.center, qConstraints.qText != null, solrQuery)
-    }
+    requestDocs(aDocsLimit, aDocsSort, qConstraints, solrQuery)
 
     // Aggregations/Facets
 
@@ -226,24 +228,29 @@ class SearchWebService(
     )
   }
 
-  private fun requestSort(aDocsSort: DocSortEnum, distPoint: Point?, hasQuery: Boolean, solrQuery: SolrQuery) {
-    val sort = if (aDocsSort == DocSortEnum.score && hasQuery) {//score requires query string
-      DocSortEnum.score // fall back on time even if asked for score (should we error instead?)
+  private fun requestDocs(aDocsLimit: Int, aDocsSort: DocSortEnum, qConstraints: ConstraintsParams, solrQuery: SolrQuery) {
+    solrQuery.rows = aDocsLimit
+    if (solrQuery.rows == 0) {
+      return
+    }
+
+    // Set Sort:
+    val sort = if (aDocsSort == DocSortEnum.score && qConstraints.qText == null) {//score requires query string
+      DocSortEnum.time // fall back on time even if asked for score (should we error instead?)
     } else {
       aDocsSort
     }
     when (sort) {
       DocSortEnum.score -> solrQuery.addSort("score", SolrQuery.ORDER.desc)
-        //TODO also sort by time after score?
+      //TODO also sort by time after score?
 
       DocSortEnum.time -> solrQuery.addSort(TIME_SORT_FIELD, SolrQuery.ORDER.desc)
 
       DocSortEnum.distance -> {
         solrQuery.addSort("geodist()", SolrQuery.ORDER.asc)
         solrQuery.set("sfield", GEO_SORT_FIELD)
-        if (distPoint == null) {
-          throw WebApplicationException("Can't sort by distance without q.geo", 400)
-        }
+        val distPoint = qConstraints.qGeoRect?.center
+                ?: throw WebApplicationException("Can't sort by distance without q.geo", 400)
         solrQuery.set("pt", toLatLon(distPoint.center))
       }
     }
@@ -307,6 +314,9 @@ class SearchWebService(
         // convert id original twitter id
         ID_FIELD -> solrIdToTweetId(value)
         else -> value
+      }
+      if (newValue !is String && newValue !is Number) {
+        throw Exception("field $name has unexpected value type ${newValue.javaClass}")
       }
       map.put(name, newValue)
     }
@@ -377,5 +387,86 @@ class SearchWebService(
   }
 
   enum class DocSortEnum {score, time, distance}
+
+  @Path("/export")
+  @ApiOperation(value = "Search export endpoint for bulk doc retrieval.",
+                notes = """The q.* parameters qre query/constraints that limit the
+                matching documents. Documents come back sorted by time descending.
+                The response format is text/csv -- comma separated.  There is a header row.
+                Values are enclosed in
+                double-quotes (") if it contains a double-quote, comma, or newline.  Embedded
+                double-quotes are escaped with another double-quote, thus: foo"bar becomes
+                "foo""bar". """)
+  @GET
+  @Produces("text/json") // TODO HACK!  Lie so that validation errors can be mapped to 400
+  @Timed
+  fun export(@BeanParam
+             qConstraints: ConstraintsParams,
+
+             @QueryParam("d.docs.limit") @Min(1) @Max(10000)
+             @ApiParam("How many documents to return.")
+             aDocsLimit: Int
+  ): Response {
+    // TODO add authorization based constraints. Until then we rely on Solr to have a
+    //   rows invariant in a deployed environment.
+    val solrQuery = SolrQuery()
+    solrQuery.requestHandler = "/select/bop/export"
+
+    qConstraints.applyToSolrQuery(solrQuery)
+
+    requestDocs(aDocsLimit, DocSortEnum.time, qConstraints, solrQuery)
+
+    solrQuery.set("echoParams", "all") // so that we can read 'fl' (we configured Solr to have this)
+
+    val solrResp: QueryResponse
+    try {
+      solrResp = solrClient.query(solrQuery);
+    } catch(e: SolrException) {
+      throw WebApplicationException(e.message, e.code()) // retain http code
+    }
+
+    // assume this echos params on the server to include 'fl' (we arranged for this in solrconfig)
+    val flStr = (solrResp.header.findRecursive("params", "fl")
+            ?: throw Exception("Expected echoParms=all and 'fl' to be set")) as String
+    val fieldList = flStr.split(',')
+
+    val streamingOutput = StreamingOutput { outputStream: OutputStream ->
+      val writer = outputStream.writer() //defaults to UTF8 in Kotlin
+      fun OutputStreamWriter.writeEscaped(str: String)
+              = StringEscapeUtils.ESCAPE_CSV.translate(str, this) // commons-lang3
+
+      // write header
+      for ((index, f) in fieldList.withIndex()) {
+        if (index != 0) writer.write(','.toInt())
+        writer.writeEscaped(f)
+      }
+      writer.write('\n'.toInt())
+
+      // loop docs
+      for (doc in solrResp.results) {
+        val map = docToMap(doc)
+        // write doc
+        for ((index, f) in fieldList.withIndex()) {
+          if (index != 0) writer.write(','.toInt())
+          map[f]?.let { writer.writeEscaped(it.toString()) }
+        }
+        writer.write('\n'.toInt())
+      }
+      writer.flush()
+    }
+
+    return Response.ok(streamingOutput, "text/csv;charset=utf-8") // TODO or JSON eventually
+            .header("Content-Disposition", "attachment") // don't show in-line in browser
+            .build()
+
+    // TODO use Solr StreamingResponseCallback. Likely then need another thread & Pipe
+
+    // TODO "Content-Disposition","attachment"
+    // TODO support JSON (.json in path?)
+    // TODO support Solr cursorMark
+    // TODO only let one request do this at a time (metered, or perhaps with authorization)
+    // TODO iterate the shards in time descending instead of all at once
+
+  }
 
 }

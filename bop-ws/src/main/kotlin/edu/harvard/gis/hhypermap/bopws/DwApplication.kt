@@ -41,11 +41,14 @@ class DwApplication : Application<DwConfiguration>() {
       override fun stop() = solrClient.close()
     })
 
-    environment.healthChecks().register(DwHealthCheck.NAME, DwHealthCheck(solrClient))
+    configuration.jersey?.forEach { environment.jersey().property(it.key, it.value) }
 
     environment.jersey().register(DTPExceptionMapper)
 
     environment.jersey().register(SearchWebService(solrClient))
+
+    environment.healthChecks().register(DwHealthCheck.NAME, DwHealthCheck(solrClient))
+
   }
 
   override fun initialize(bootstrap: Bootstrap<DwConfiguration>) {

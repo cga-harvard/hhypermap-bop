@@ -44,9 +44,9 @@ class SearchWebServiceTest {
 
     @JvmStatic @BeforeClass fun beforeClass() {
       solrClient.add(listOf(
-              doc("2015-04-01T12:00:00Z", "41.5,-70", "Apple fruit"),
-              doc("2015-04-02T12:00:00Z", "42.5,-70", "Orange fruit fruit fruit"),
-              doc("2015-04-03T12:00:00Z", "43.5,-70", "Lemon fruit")
+              doc("2015-04-01T12:00:00Z", "41.5,-70", "Apple fruit", "Alex"),
+              doc("2015-04-02T12:00:00Z", "42.5,-70", "Orange fruit fruit fruit", "Otto"),
+              doc("2015-04-03T12:00:00Z", "43.5,-70", "Lemon fruit", "Luke")
       ))
       solrClient.commit()
     }
@@ -57,11 +57,12 @@ class SearchWebServiceTest {
       solrClient.close()
     }
 
-    fun doc(created_at: String, coordLatLon: String, text: String ): SolrInputDocument =
+    fun doc(created_at: String, coordLatLon: String, text: String, userName: String): SolrInputDocument =
             SolrInputDocument().apply {
               setField("text", text)
               setField("created_at", created_at.toString())
               setField("coord", coordLatLon)
+              setField("user_name", userName)
               setField("id", Instant.parse(created_at).toEpochMilli()) // good enough
             }
   }
@@ -83,6 +84,8 @@ class SearchWebServiceTest {
           = reqJson(uri("/tweets/search", "q.text" to "fruit", "d.docs.limit" to "2")).let {
     assertEquals(3, it["a.matchDocs"].asInt(), it.toString())
     assertEquals("Orange fruit fruit fruit", it["d.docs"][0]["text"].textValue(), it.toString())
+    // test returns date string in expected format
+    assertEquals("2015-04-02T12:00:00Z", it["d.docs"][0]["created_at"].textValue(), it.toString())
   }
 
   // TIME
@@ -174,6 +177,22 @@ class SearchWebServiceTest {
             .queryParam("a.hm.gridLevel", firstGridLevel.plus(1).toString()))["a.hm"].let {
       assertEquals(firstGridLevel + 1, it["gridLevel"].asInt())
       assertEquals(firstCells * 4, it["rows"].asInt() * it["columns"].asInt())
+    }
+  }
+
+  @Test fun testExport() {
+    // this is a cheasy test, granted
+    val uriBuilder = uri("/tweets/export", "q.time" to "[2015-04-01 TO 2015-04-03]", "d.docs.limit" to "2")
+    val rsp: Response = resources.client().target(uriBuilder).request().get() // HTTP GET
+    try {
+      assert(200 == rsp.status, {"Bad Status: ${rsp.status}, entity: ${rsp.readEntity(Any::class.java)}"})
+      val resultCsv: String = rsp.readEntity(String::class.java)!!;
+      assertEquals("""id,text,created_at,coord,user_name
+9223373464830775808,Orange fruit fruit fruit,2015-04-02T12:00:00Z,"42.5,-70",Otto
+9223373464744375808,Apple fruit,2015-04-01T12:00:00Z,"41.5,-70",Alex
+""", resultCsv)
+    } finally {
+      rsp.close() //note: doesn't implement Closeable but has close method
     }
   }
 
