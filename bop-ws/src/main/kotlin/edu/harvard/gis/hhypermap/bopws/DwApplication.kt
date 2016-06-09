@@ -16,6 +16,7 @@
 
 package edu.harvard.gis.hhypermap.bopws
 
+import com.fasterxml.jackson.databind.SerializationFeature
 import io.dropwizard.Application
 import io.dropwizard.jersey.errors.ErrorMessage
 import io.dropwizard.lifecycle.Managed
@@ -23,6 +24,7 @@ import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import io.federecio.dropwizard.swagger.SwaggerBundle
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
+import org.slf4j.LoggerFactory
 import java.time.format.DateTimeParseException
 import javax.ws.rs.core.Response
 import javax.ws.rs.ext.ExceptionMapper
@@ -49,6 +51,8 @@ class DwApplication : Application<DwConfiguration>() {
 
     environment.healthChecks().register(DwHealthCheck.NAME, DwHealthCheck(solrClient))
 
+    if (configuration.indent)
+      environment.objectMapper.enable(SerializationFeature.INDENT_OUTPUT)
   }
 
   override fun initialize(bootstrap: Bootstrap<DwConfiguration>) {
@@ -73,3 +77,5 @@ class DwApplication : Application<DwConfiguration>() {
 }
 
 fun main(args: Array<String>) = DwApplication().run(*args)
+
+val log = LoggerFactory.getLogger(DwApplication::class.java.`package`.name)

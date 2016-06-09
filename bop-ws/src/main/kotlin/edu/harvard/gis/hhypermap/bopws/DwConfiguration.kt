@@ -29,6 +29,9 @@ import org.hibernate.validator.constraints.NotEmpty
  */
 class DwConfiguration : Configuration() {
 
+  @JsonProperty
+  val indent: Boolean = false
+
   @JsonProperty("swagger")
   var swaggerBundleConfiguration: SwaggerBundleConfiguration? = null
 
