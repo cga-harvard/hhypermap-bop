@@ -136,7 +136,7 @@ class SearchWebService(
           @BeanParam
           qConstraints: ConstraintsParams,
 
-          @QueryParam("d.docs.limit") @DefaultValue("0") @Min(0) @Max(1000)
+          @QueryParam("d.docs.limit") @DefaultValue("0") @Min(0) @Max(100)
           @ApiParam("How many documents to return in the search results.")
           aDocsLimit: Int,
 
@@ -456,12 +456,10 @@ class SearchWebService(
   fun export(@BeanParam
              qConstraints: ConstraintsParams,
 
-             @QueryParam("d.docs.limit") @Min(1) @Max(10000)
+             @QueryParam("d.docs.limit") @Min(1) @Max(100) // TODO increase once we have authentication
              @ApiParam("How many documents to return.")
              aDocsLimit: Int
   ): Response {
-    // TODO add authorization based constraints. Until then we rely on Solr to have a
-    //   rows invariant in a deployed environment.
     val solrQuery = SolrQuery()
     solrQuery.requestHandler = "/select/bop/export"
 
