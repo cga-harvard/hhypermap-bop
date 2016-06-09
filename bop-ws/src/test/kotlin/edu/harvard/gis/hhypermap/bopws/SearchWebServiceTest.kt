@@ -108,7 +108,7 @@ class SearchWebServiceTest {
   @Test fun testTimeFacets() {
     reqJson(uri("/tweets/search", "a.time.limit" to "1000", "a.time.gap" to "P1D",
             "a.time.filter" to "[2015-04-01 TO 2015-04-03]"))["a.time"].let {
-      assertEquals("P1D", it.get("gap").textValue())
+      assertEquals("P1D", it["gap"].textValue())
       assertEquals(2, it["counts"].size())
       assertEquals(1, it["counts"][0]["count"].asInt())
       assertEquals(1, it["counts"][1]["count"].asInt())
@@ -180,6 +180,15 @@ class SearchWebServiceTest {
     }
   }
 
+  // MISC
+
+  @Test fun testTextFacet() {
+    reqJson(uri("/tweets/search", "a.text.limit" to "1")).let {
+      assertEquals("fruit", it["a.text"][0]["value"].textValue())
+      assertEquals(3,       it["a.text"][0]["count"].numberValue())
+    }
+  }
+
   @Test fun testExport() {
     // this is a cheasy test, granted
     val uriBuilder = uri("/tweets/export", "q.time" to "[2015-04-01 TO 2015-04-03]", "d.docs.limit" to "2")
@@ -229,6 +238,8 @@ class SearchWebServiceTest {
     } else {
       assertFalse(json.hasNonNull("a.time"))
     }
+    assertEquals(queryParams["a.hm.limit"] != null, json.hasNonNull("a.hm"))
+    assertEquals(queryParams["a.text.limit"] != null, json.hasNonNull("a.text"))
   }
 
   private fun assertReq400(uriBuilder: UriBuilder) {

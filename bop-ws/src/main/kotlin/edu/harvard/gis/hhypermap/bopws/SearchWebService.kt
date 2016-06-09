@@ -25,6 +25,7 @@ import io.swagger.annotations.ApiParam
 import org.apache.commons.lang3.StringEscapeUtils
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.SolrQuery
+import org.apache.solr.client.solrj.response.FacetField
 import org.apache.solr.client.solrj.response.QueryResponse
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrException
@@ -53,6 +54,7 @@ private val TIME_SORT_FIELD = "id" // re-use 'id' which is a tweet id which is t
 private val GEO_FILTER_FIELD = "coord_rpt"
 private val GEO_HEATMAP_FIELD = "coord_rpt" // and assume units="degrees" here
 private val GEO_SORT_FIELD = "coord" // and assume units="kilometers" here
+private val TEXT_FACET_FIELD = "text"
 
 private fun String.parseGeoBox() = parseGeoBox(this)
 
@@ -177,7 +179,12 @@ class SearchWebService(
           @QueryParam("a.hm.filter") @Pattern(regexp = """\[(\S+,\S+) TO (\S+,\S+)\]""")
           @ApiParam("From what region to plot the heatmap. Defaults to q.geo or otherwise the" +
                   " world.")
-          aHmFilter: String?
+          aHmFilter: String?,
+
+          @QueryParam("a.text.limit") @DefaultValue("0") @Min(0)
+          @ApiParam("Returns the most frequently occurring words.  WARNING: There is usually a" +
+                  " significant performance hit in this due to the extremely high cardinality.")
+          aTextLimit: Int
 
           // TODO a.text
           // TODO debug timings
@@ -191,19 +198,24 @@ class SearchWebService(
 
     qConstraints.applyToSolrQuery(solrQuery)
 
-    // -- Docs
+    // a.docs
     requestDocs(aDocsLimit, aDocsSort, qConstraints, solrQuery)
 
     // Aggregations/Facets
 
     // a.time
     if (aTimeLimit > 0) {
-      requestDateFacets(aTimeLimit, aTimeFilter ?: qConstraints.qTime, aTimeGap, solrQuery)
+      requestTimeFacet(aTimeLimit, aTimeFilter ?: qConstraints.qTime, aTimeGap, solrQuery)
     }
 
     // a.hm
     if (aHmLimit > 0) {
-      requestHeatmap(aHmLimit, aHmFilter ?: qConstraints.qGeo, aHmGridLevel, solrQuery)
+      requestHeatmapFacet(aHmLimit, aHmFilter ?: qConstraints.qGeo, aHmGridLevel, solrQuery)
+    }
+
+    // a.text
+    if (aTextLimit > 0) {
+      requestTextFacet(aTextLimit, solrQuery)
     }
 
     // -- EXECUTE
@@ -223,8 +235,9 @@ class SearchWebService(
             aMatchDocs = solrResp.results.numFound,
             // if didn't ask for docs, we return no list at all
             dDocs = if (solrQuery.rows > 0) solrResp.results.map { docToMap(it) } else null,
-            aTime = SearchResponse.DateFacet.fromSolr(solrResp),
-            aHm = SearchResponse.Heatmap.fromSolr(solrResp)
+            aTime = SearchResponse.TimeFacet.fromSolr(solrResp),
+            aHm = SearchResponse.HeatmapFacet.fromSolr(solrResp),
+            aText = SearchResponse.fieldValsFacetFromSolr(solrResp, TEXT_FACET_FIELD)
     )
   }
 
@@ -256,7 +269,7 @@ class SearchWebService(
     }
   }
 
-  private fun requestDateFacets(aTimeLimit: Int, aTimeFilter: String?, aTimeGap: String?, solrQuery: SolrQuery) {
+  private fun requestTimeFacet(aTimeLimit: Int, aTimeFilter: String?, aTimeGap: String?, solrQuery: SolrQuery) {
     val now = Instant.now()
     val (_startInst, _endInst) = parseDateTimeRange(aTimeFilter)
     val startInst = _startInst ?: now.minus(90, ChronoUnit.DAYS)
@@ -281,7 +294,7 @@ class SearchWebService(
             Date.from(startInst), Date.from(endInst), gap.toSolr())
   }
 
-  private fun requestHeatmap(aHmLimit: Int, aHmFilter: String?, aHmGridLevel: Int?, solrQuery: SolrQuery) {
+  private fun requestHeatmapFacet(aHmLimit: Int, aHmFilter: String?, aHmGridLevel: Int?, solrQuery: SolrQuery) {
     solrQuery.setFacet(true)
     solrQuery.set("facet.heatmap", GEO_HEATMAP_FIELD)
     val hmRectStr = aHmFilter ?: "[-90,-180 TO 90,180]"
@@ -302,6 +315,13 @@ class SearchWebService(
       // Note: assume units="degrees" on this field type
       solrQuery.set("facet.heatmap.distErr", cellSideLenInDegrees.toFloat().toString())
     }
+  }
+
+  private fun requestTextFacet(aTextLimit: Int, solrQuery: SolrQuery) {
+    solrQuery.setFacet(true)
+    solrQuery.set("facet.field", TEXT_FACET_FIELD)
+    solrQuery.set("f.$TEXT_FACET_FIELD.facet.limit", aTextLimit)
+    // we let params on the Solr side tune this further if desired
   }
 
   private fun docToMap(doc: SolrDocument): Map<String, Any> {
@@ -330,23 +350,31 @@ class SearchWebService(
   data class SearchResponse (
           @get:JsonProperty("a.matchDocs") val aMatchDocs: Long,
           @get:JsonProperty("d.docs") val dDocs: List<Map<String,Any>>?,
-          @get:JsonProperty("a.time") val aTime: DateFacet?,
-          @get:JsonProperty("a.hm") val aHm: Heatmap?
+          @get:JsonProperty("a.time") val aTime: TimeFacet?,
+          @get:JsonProperty("a.hm") val aHm: HeatmapFacet?,
+          @get:JsonProperty("a.text") val aText: List<FacetValue>?
           //...
   ) {
 
+    companion object {
+      fun fieldValsFacetFromSolr(solrResp: QueryResponse, field: String): List<FacetValue>? {
+        var facetField: FacetField = solrResp.getFacetField(field) ?: return null
+        return facetField.values.map { FacetValue(it.name, it.count.toLong()) }
+      }
+    }
+
     data class FacetValue(val value: String, val count: Long)
 
-    data class DateFacet( // TODO document/fix Date type
+    data class TimeFacet( // TODO document/fix Date type
             val start: String,//Date
             val end: String,//Date
             val gap: String,
             val counts: List<FacetValue>
     ) {
       companion object {
-        fun fromSolr(solrResp: QueryResponse): DateFacet? {
+        fun fromSolr(solrResp: QueryResponse): TimeFacet? {
           val rng = solrResp.facetRanges?.firstOrNull { it.name == TIME_FILTER_FIELD } ?: return null
-          return DateFacet(
+          return TimeFacet(
                   start = (rng.start as Date).toInstant().toString(),
                   end = (rng.end as Date).toInstant().toString(),
                   gap = Gap.parseSolr(rng.gap as String).toISO8601(),
@@ -356,7 +384,7 @@ class SearchWebService(
       }
     }
 
-    data class Heatmap(
+    data class HeatmapFacet(
             val gridLevel: Int,
             val rows: Int,
             val columns: Int,
@@ -367,12 +395,12 @@ class SearchWebService(
     ) {
         companion object {
           @Suppress("UNCHECKED_CAST")
-          fun fromSolr(solrResp: QueryResponse): Heatmap? {
+          fun fromSolr(solrResp: QueryResponse): HeatmapFacet? {
             val hmNl = solrResp.response
                     .findRecursive("facet_counts", "facet_heatmaps", GEO_HEATMAP_FIELD) as NamedList<Any>?
                     ?: return null
             // TODO consider doing this via a reflection utility; must it be Kotlin specific?
-            return Heatmap(gridLevel = hmNl.get("gridLevel") as Int,
+            return HeatmapFacet(gridLevel = hmNl.get("gridLevel") as Int,
                     rows = hmNl.get("rows") as Int,
                     columns = hmNl.get("columns") as Int,
                     minX = hmNl.get("minX") as Double,
@@ -384,7 +412,8 @@ class SearchWebService(
           }
         }
     }
-  }
+
+  }// class SearchResponse
 
   enum class DocSortEnum {score, time, distance}
 
