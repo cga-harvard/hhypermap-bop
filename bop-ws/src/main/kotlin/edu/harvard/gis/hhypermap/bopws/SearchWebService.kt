@@ -18,7 +18,9 @@ package edu.harvard.gis.hhypermap.bopws
 
 import com.codahale.metrics.annotation.Timed
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -31,6 +33,7 @@ import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrException
 import org.apache.solr.common.util.NamedList
 import org.locationtech.spatial4j.shape.Rectangle
+import org.slf4j.LoggerFactory
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.math.BigInteger
@@ -46,6 +49,7 @@ import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.StreamingOutput
+import kotlin.reflect.KClass
 
 //  Solr fields: (TODO make configurable?)
 private val ID_FIELD = "id"
@@ -186,9 +190,6 @@ class SearchWebService(
                   " significant performance hit in this due to the extremely high cardinality.")
           aTextLimit: Int
 
-          // TODO a.text
-          // TODO debug timings
-
   ): SearchResponse {
     // note: The DropWizard *Param classes have questionable value with Kotlin given null types so
     //  we don't use them
@@ -223,6 +224,7 @@ class SearchWebService(
     // We can route this request to where the realtime shard is for stability/consistency and
     //  since that machine is different than the others
     //solrQuery.set("_route_", "realtime") TODO
+    solrQuery.add("debug", "timing")
 
     val solrResp: QueryResponse
     try {
@@ -237,7 +239,8 @@ class SearchWebService(
             dDocs = if (solrQuery.rows > 0) solrResp.results.map { docToMap(it) } else null,
             aTime = SearchResponse.TimeFacet.fromSolr(solrResp),
             aHm = SearchResponse.HeatmapFacet.fromSolr(solrResp),
-            aText = SearchResponse.fieldValsFacetFromSolr(solrResp, TEXT_FACET_FIELD)
+            aText = SearchResponse.fieldValsFacetFromSolr(solrResp, TEXT_FACET_FIELD),
+            timing = SearchResponse.getTimingFromSolr(solrResp)
     )
   }
 
@@ -347,13 +350,14 @@ class SearchWebService(
   private fun solrIdToTweetId(value: Any): String =
           (BigInteger.valueOf(value as Long) - BigInteger.valueOf(Long.MIN_VALUE)).toString()
 
+  @JsonPropertyOrder("a.matchDocs", "d.docs", "a.time", "a.hm", "a.text", "timing")
   data class SearchResponse (
           @get:JsonProperty("a.matchDocs") val aMatchDocs: Long,
           @get:JsonProperty("d.docs") val dDocs: List<Map<String,Any>>?,
           @get:JsonProperty("a.time") val aTime: TimeFacet?,
           @get:JsonProperty("a.hm") val aHm: HeatmapFacet?,
-          @get:JsonProperty("a.text") val aText: List<FacetValue>?
-          //...
+          @get:JsonProperty("a.text") val aText: List<FacetValue>?,
+          @get:JsonProperty("timing") val timing: Timing
   ) {
 
     companion object {
@@ -361,9 +365,29 @@ class SearchWebService(
         var facetField: FacetField = solrResp.getFacetField(field) ?: return null
         return facetField.values.map { FacetValue(it.name, it.count.toLong()) }
       }
+
+      @Suppress("UNCHECKED_CAST")
+      fun getTimingFromSolr(solrResp: QueryResponse): Timing {
+        return Timing("callSolr.elapsed", solrResp.elapsedTime,
+                listOf(convertSolrTimingTree("QTime", solrResp.debugMap["timing"] as NamedList<Any>))).apply {
+          if (solrResp.qTime.toLong() != this.subs[0].millis) {
+            log.warn("QTime != debug.timing.time")
+          }
+        }
+      }
+
+      @Suppress("UNCHECKED_CAST")
+      private fun convertSolrTimingTree(label: String, namedList: NamedList<Any>): Timing {
+        val millis = (namedList.remove("time") as Double).toLong() // note we remove it
+        val subs = namedList.map { convertSolrTimingTree(it.key, it.value as NamedList<Any>) }
+        return Timing(label, millis, subs)
+      }
     }
 
     data class FacetValue(val value: String, val count: Long)
+
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    data class Timing(val label: String, val millis: Long, val subs: List<Timing> = emptyList())
 
     data class TimeFacet( // TODO document/fix Date type
             val start: String,//Date
