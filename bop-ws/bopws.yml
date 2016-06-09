@@ -1,2 +1,20 @@
-solrZkHost: localhost:9983
+#solrZkHost: localhost:9983
+solrUrl: http://localhost:8984/solr
 solrCollection: bop
+
+server:
+  applicationContextPath: /bopws
+
+indent: true
+
+swagger:
+  resourcePackage: edu.harvard.gis.hhypermap.bopws
+
+#jersey:
+#  # https://jersey.java.net/documentation/latest/monitoring_tracing.html#d0e16819
+#  jersey.config.server.tracing.type: ON_DEMAND
+
+#logging:
+#  level: INFO
+#  loggers:
+#    "org.glassfish.jersey": {level: TRACE}
