@@ -33,7 +33,6 @@ import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrException
 import org.apache.solr.common.util.NamedList
 import org.locationtech.spatial4j.shape.Rectangle
-import org.slf4j.LoggerFactory
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.math.BigInteger
@@ -49,7 +48,6 @@ import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.StreamingOutput
-import kotlin.reflect.KClass
 
 //  Solr fields: (TODO make configurable?)
 private val ID_FIELD = "id"
@@ -58,7 +56,8 @@ private val TIME_SORT_FIELD = "id" // re-use 'id' which is a tweet id which is t
 private val GEO_FILTER_FIELD = "coord_rpt"
 private val GEO_HEATMAP_FIELD = "coord_rpt" // and assume units="degrees" here
 private val GEO_SORT_FIELD = "coord" // and assume units="kilometers" here
-private val TEXT_FACET_FIELD = "text"
+private val TEXT_FIELD = "text"
+private val USER_FIELD = "user_name"
 
 private fun String.parseGeoBox() = parseGeoBox(this)
 
@@ -73,16 +72,21 @@ class SearchWebService(
     @set:ApiParam("Constrains docs by keyword search query.")
     var qText: String? = null,
 
+    @set:QueryParam("q.user") @set:Size(min = 1)
+    @set:ApiParam("Constrains docs by matching exactly a certain user")
+    var qUser: String? = null,
+
     @set:QueryParam("q.time") @set:Pattern(regexp = """\[(\S+) TO (\S+)\]""")
     @set:ApiParam("Constrains docs by time range.  Either side can be '*' to signify" +
-            " open-ended. Otherwise it should either be in this format:" +
-            " 2013-03-01 or 2013-03-01T00:00:00 (both are equivalent). UTC time zone is" +
-            " implied.") // TODO add separate TZ param?
+            " open-ended. Otherwise it must be in either format as given in the example." +
+            " UTC time zone is implied.", // TODO add separate TZ param?
+            example = "[2013-03-01 TO 2013-04-01T00:00:00]")
     var qTime: String? = null,
 
     @set:QueryParam("q.geo") @set:Pattern(regexp = """\[(\S+,\S+) TO (\S+,\S+)\]""")
     @set:ApiParam("A rectangular geospatial filter in decimal degrees going from the lower-left" +
-            " to the upper-right.  The coordinates are in lat,lon format.")
+            " to the upper-right.  The coordinates are in lat,lon format.",
+            example = "[-90,-180 TO 90,180]")
     var qGeo: String? = null
 
     // TODO more, q.geoPath q.lang, ...
@@ -99,6 +103,11 @@ class SearchWebService(
         // TODO will wind up in 'fq'?  If not we should use fq if no relevance sort
       }
 
+      // q.user
+      if (qUser != null) {
+        solrQuery.addFilterQuery("{!field f=$USER_FIELD tag=$USER_FIELD}$qUser")
+      }
+
       // q.time
       if (qTime != null) {
         val (leftInst, rightInst) = parseDateTimeRange(qTime) // parses multiple formats
@@ -110,10 +119,9 @@ class SearchWebService(
       }
 
       // q.geo
-      qGeo?.let {
-        qGeoRect
-        solrQuery.addFilterQuery("$GEO_FILTER_FIELD:$it")// lucene query syntax
-        it.parseGeoBox()
+      if (qGeo != null) {
+        qGeoRect // side effect of validating qGeo
+        solrQuery.addFilterQuery("$GEO_FILTER_FIELD:$qGeo")// lucene query syntax
       }
 
       //TODO q.geoPath
@@ -175,7 +183,7 @@ class SearchWebService(
                   " See Solr docs for more details on the response format.")
           aHmLimit: Int,
 
-          @QueryParam("a.hm.gridLevel") @Min(1)
+          @QueryParam("a.hm.gridLevel") @Min(1) @Max(100)
           @ApiParam("To explicitly specify the grid level, e.g. to let a user ask for greater or" +
                   " courser resolution than the most recent request.  Ignores a.hm.limit.")
           aHmGridLevel: Int?,
@@ -185,10 +193,14 @@ class SearchWebService(
                   " world.")
           aHmFilter: String?,
 
-          @QueryParam("a.text.limit") @DefaultValue("0") @Min(0)
+          @QueryParam("a.text.limit") @DefaultValue("0") @Min(0) @Max(1000)
           @ApiParam("Returns the most frequently occurring words.  WARNING: There is usually a" +
                   " significant performance hit in this due to the extremely high cardinality.")
-          aTextLimit: Int
+          aTextLimit: Int,
+
+          @QueryParam("a.user.limit") @DefaultValue("0") @Min(0) @Max(1000)
+          @ApiParam("Returns the most frequently occurring users.")
+          aUserLimit: Int
 
   ): SearchResponse {
     // note: The DropWizard *Param classes have questionable value with Kotlin given null types so
@@ -216,7 +228,12 @@ class SearchWebService(
 
     // a.text
     if (aTextLimit > 0) {
-      requestTextFacet(aTextLimit, solrQuery)
+      requestFieldFacet(TEXT_FIELD, aTextLimit, solrQuery, exFilter = false)
+    }
+
+    // a.user
+    if (aUserLimit > 0) {
+      requestFieldFacet(USER_FIELD, aUserLimit, solrQuery)
     }
 
     // -- EXECUTE
@@ -239,7 +256,8 @@ class SearchWebService(
             dDocs = if (solrQuery.rows > 0) solrResp.results.map { docToMap(it) } else null,
             aTime = SearchResponse.TimeFacet.fromSolr(solrResp),
             aHm = SearchResponse.HeatmapFacet.fromSolr(solrResp),
-            aText = SearchResponse.fieldValsFacetFromSolr(solrResp, TEXT_FACET_FIELD),
+            aText = SearchResponse.fieldValsFacetFromSolr(solrResp, TEXT_FIELD),
+            aUser = SearchResponse.fieldValsFacetFromSolr(solrResp, USER_FIELD),
             timing = SearchResponse.getTimingFromSolr(solrResp)
     )
   }
@@ -320,10 +338,10 @@ class SearchWebService(
     }
   }
 
-  private fun requestTextFacet(aTextLimit: Int, solrQuery: SolrQuery) {
+  private fun requestFieldFacet(field: String, limit: Int, solrQuery: SolrQuery, exFilter: Boolean = true) {
     solrQuery.setFacet(true)
-    solrQuery.set("facet.field", TEXT_FACET_FIELD)
-    solrQuery.set("f.$TEXT_FACET_FIELD.facet.limit", aTextLimit)
+    solrQuery.add("facet.field", if (exFilter) "{! ex=$field}$field" else field)
+    solrQuery.set("f.$field.facet.limit", limit)
     // we let params on the Solr side tune this further if desired
   }
 
@@ -350,19 +368,20 @@ class SearchWebService(
   private fun solrIdToTweetId(value: Any): String =
           (BigInteger.valueOf(value as Long) - BigInteger.valueOf(Long.MIN_VALUE)).toString()
 
-  @JsonPropertyOrder("a.matchDocs", "d.docs", "a.time", "a.hm", "a.text", "timing")
+  @JsonPropertyOrder("a.matchDocs", "d.docs", "a.time", "a.hm", "a.user", "a.text", "timing")
   data class SearchResponse (
           @get:JsonProperty("a.matchDocs") val aMatchDocs: Long,
           @get:JsonProperty("d.docs") val dDocs: List<Map<String,Any>>?,
           @get:JsonProperty("a.time") val aTime: TimeFacet?,
           @get:JsonProperty("a.hm") val aHm: HeatmapFacet?,
+          @get:JsonProperty("a.user") val aUser: List<FacetValue>?,
           @get:JsonProperty("a.text") val aText: List<FacetValue>?,
           @get:JsonProperty("timing") val timing: Timing
   ) {
 
     companion object {
       fun fieldValsFacetFromSolr(solrResp: QueryResponse, field: String): List<FacetValue>? {
-        var facetField: FacetField = solrResp.getFacetField(field) ?: return null
+        val facetField: FacetField = solrResp.getFacetField(field) ?: return null
         return facetField.values.map { FacetValue(it.name, it.count.toLong()) }
       }
 
@@ -478,7 +497,7 @@ class SearchWebService(
 
     // assume this echos params on the server to include 'fl' (we arranged for this in solrconfig)
     val flStr = (solrResp.header.findRecursive("params", "fl")
-            ?: throw Exception("Expected echoParms=all and 'fl' to be set")) as String
+            ?: throw Exception("Expected echoParams=all and 'fl' to be set")) as String
     val fieldList = flStr.split(',')
 
     val streamingOutput = StreamingOutput { outputStream: OutputStream ->

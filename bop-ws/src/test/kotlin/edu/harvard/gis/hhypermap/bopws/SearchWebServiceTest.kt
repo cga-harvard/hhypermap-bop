@@ -80,6 +80,15 @@ class SearchWebServiceTest {
     }
   }// tests explicit 'OR', and
 
+  @Test fun testUserFilterFacet() {
+    // implicit AND default
+    reqJson(uri("/tweets/search", "q.user" to "Otto", "a.user.limit" to "10")).let {
+      assertEquals(1, it["a.matchDocs"].asInt())
+      assertEquals(3, it["a.user"].size());// due to multi-select faceting, we show all 3, not 1
+    }
+
+  }// tests explicit 'OR', and
+
   @Test fun testTextScoreOrder()
           = reqJson(uri("/tweets/search", "q.text" to "fruit", "d.docs.limit" to "2")).let {
     assertEquals(3, it["a.matchDocs"].asInt(), it.toString())

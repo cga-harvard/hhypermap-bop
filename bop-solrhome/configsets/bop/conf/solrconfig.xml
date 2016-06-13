@@ -500,7 +500,7 @@
       <bool name="facet.distrib.mco">true</bool>
       <!-- until we know we want to either "pay" the high RAM cost of uninverting, or develop
        a docValues approach (some custom dev work Solr-side is necessary), use enum -->
-      <str name="facet.method">enum</str>
+      <str name="f.text.facet.method">enum</str>
       <int name="facet.enum.cache.minDF">1000000</int>
 
     </lst>
