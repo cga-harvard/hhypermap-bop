@@ -33,7 +33,9 @@ class DwConfiguration : Configuration() {
   val indent: Boolean = false
 
   @JsonProperty("swagger")
-  var swaggerBundleConfiguration: SwaggerBundleConfiguration? = null
+  val swaggerBundleConfiguration: SwaggerBundleConfiguration = SwaggerBundleConfiguration().apply {
+    resourcePackage = SearchWebService::class.java.`package`.name
+  }
 
   @JsonProperty
   var jersey: Map<String, String>? = null

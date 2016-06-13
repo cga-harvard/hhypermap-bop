@@ -7,8 +7,8 @@ server:
 
 indent: true
 
-swagger:
-  resourcePackage: edu.harvard.gis.hhypermap.bopws
+#swagger:
+# TODO configure terms of service, etc.
 
 #jersey:
 #  # https://jersey.java.net/documentation/latest/monitoring_tracing.html#d0e16819
