@@ -387,19 +387,21 @@ class SearchWebService(
 
       @Suppress("UNCHECKED_CAST")
       fun getTimingFromSolr(solrResp: QueryResponse): Timing {
-        return Timing("callSolr.elapsed", solrResp.elapsedTime,
-                listOf(convertSolrTimingTree("QTime", solrResp.debugMap["timing"] as NamedList<Any>))).apply {
-          if (solrResp.qTime.toLong() != this.subs[0].millis) {
-            log.warn("QTime != debug.timing.time")
-          }
+        val tree = convertSolrTimingTree("QTime", solrResp.debugMap["timing"] as NamedList<Any>)
+        if (tree != null && Math.abs(solrResp.qTime.toLong() - tree.millis) > 5) {
+          log.warn("QTime != debug.timing.time: ${solrResp.qTime.toLong() - tree.millis}")
         }
+        return Timing("callSolr.elapsed", solrResp.elapsedTime, listOfNotNull(tree));
       }
 
       @Suppress("UNCHECKED_CAST")
-      private fun convertSolrTimingTree(label: String, namedList: NamedList<Any>): Timing {
+      private fun convertSolrTimingTree(label: String, namedList: NamedList<Any>): Timing? {
         val millis = (namedList.remove("time") as Double).toLong() // note we remove it
+        if (millis == 0L) { // avoid verbosity; lots of 0's is typical
+          return null;
+        }
         val subs = namedList.map { convertSolrTimingTree(it.key, it.value as NamedList<Any>) }
-        return Timing(label, millis, subs)
+        return Timing(label, millis, subs.filterNotNull())
       }
     }
 
