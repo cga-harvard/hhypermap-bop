@@ -29,13 +29,20 @@ import org.hibernate.validator.constraints.NotEmpty
  */
 class DwConfiguration : Configuration() {
 
-  @JsonProperty
+  @JsonProperty // JSON
   val indent: Boolean = false
 
   @JsonProperty("swagger")
   val swaggerBundleConfiguration: SwaggerBundleConfiguration = SwaggerBundleConfiguration().apply {
     resourcePackage = SearchWebService::class.java.`package`.name
   }
+
+  @JsonProperty // CORS: see Jetty CrossOriginFilter servlet params
+  var cors: Map<String, String>? = hashMapOf(
+          "allowedOrigins" to "*",
+          "allowedHeaders" to "*",
+          "allowedMethods" to "OPTIONS,GET,HEAD" // all we need
+  )
 
   @JsonProperty
   var jersey: Map<String, String>? = null

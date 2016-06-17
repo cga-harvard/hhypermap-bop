@@ -24,8 +24,11 @@ import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import io.federecio.dropwizard.swagger.SwaggerBundle
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
+import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.slf4j.LoggerFactory
 import java.time.format.DateTimeParseException
+import java.util.*
+import javax.servlet.DispatcherType
 import javax.ws.rs.core.Response
 import javax.ws.rs.ext.ExceptionMapper
 import javax.ws.rs.ext.Provider
@@ -36,13 +39,23 @@ import javax.ws.rs.ext.Provider
 class DwApplication : Application<DwConfiguration>() {
 
   override fun run(configuration: DwConfiguration, environment: Environment) {
-    // Manage Solr
+    // SOLR: Ensure we shut Solr down
     val solrClient = configuration.newSolrClient()
     environment.lifecycle().manage(object : Managed {
       override fun start() { }
       override fun stop() = solrClient.close()
     })
 
+    // CORS
+    if (configuration.cors != null) {
+      log.info("Registering CORS filter")
+      // https://stackoverflow.com/questions/25775364/enabling-cors-in-dropwizard-not-working
+      val filter = environment.servlets().addFilter("CORS", CrossOriginFilter::class.java)
+      filter.initParameters = configuration.cors
+      filter.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType::class.java), true, "/*")
+    }
+
+    // Jersey: custom feature flags
     configuration.jersey?.forEach { environment.jersey().property(it.key, it.value) }
 
     environment.jersey().register(DTPExceptionMapper)

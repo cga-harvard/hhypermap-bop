@@ -7,6 +7,9 @@ server:
 
 indent: true
 
+#cors:
+# see debug for options; '*' origin by default
+
 #swagger:
 # TODO configure terms of service, etc.
 
@@ -17,4 +20,5 @@ indent: true
 #logging:
 #  level: INFO
 #  loggers:
-#    "org.glassfish.jersey": {level: TRACE}
+#    "org.glassfish.jersey": {level: DEBUG}
+#    "org.eclipse.jetty.servlets.CrossOriginFilter": {level: DEBUG}
