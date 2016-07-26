@@ -20,6 +20,7 @@ import com.codahale.metrics.MetricRegistry
 import io.dropwizard.configuration.ConfigurationFactory
 import io.dropwizard.jackson.Jackson
 import io.dropwizard.logging.BootstrapLogging
+import io.dropwizard.validation.BaseValidator
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.common.serialization.Serdes
@@ -36,7 +37,7 @@ fun main(args: Array<String>) {
   val configFile: File = File(args[0])
   val etlConfig = ConfigurationFactory<EtlConfiguration>(
           EtlConfiguration::class.java,
-          null,//validator (lets not include Jersey, yet another dependency)
+          BaseValidator.newValidator(),
           Jackson.newObjectMapper(),
           "etl")//sysprop prefix
     .build(configFile)
@@ -56,7 +57,9 @@ fun main(args: Array<String>) {
 fun doStream(streamsConfig: StreamsConfig, sourceTopic: String, destTopic: String) {
   val builder = KStreamBuilder()
 
+  @Suppress("UNCHECKED_CAST")
   val keySerde: Serde<Long> = streamsConfig.keySerde() as Serde<Long>
+  @Suppress("UNCHECKED_CAST")
   val valueSerde: Serde<GenericRecord> = streamsConfig.valueSerde() as Serde<GenericRecord>
 
   builder.stream<Long, GenericRecord>(keySerde, valueSerde, sourceTopic)

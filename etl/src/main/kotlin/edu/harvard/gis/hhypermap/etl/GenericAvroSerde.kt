@@ -18,6 +18,7 @@ class GenericAvroSerde : Serde<GenericRecord> {
     val deserializer =
             if (props == null) KafkaAvroDeserializer(client)
             else KafkaAvroDeserializer(client, props)
+    @Suppress("UNCHECKED_CAST") // TODO Kotlin doesn't recognize this here
     inner = Serdes.serdeFrom<GenericRecord>(
             KafkaAvroSerializer(client) as Serializer<GenericRecord>,
             deserializer as Deserializer<GenericRecord>)

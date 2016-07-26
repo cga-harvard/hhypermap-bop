@@ -19,13 +19,16 @@ package edu.harvard.gis.hhypermap.etl
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.dropwizard.logging.DefaultLoggingFactory
 import io.dropwizard.logging.LoggingFactory
+import org.hibernate.validator.constraints.NotEmpty
 
 class EtlConfiguration {
 
   @JsonProperty
+  @NotEmpty
   var kafkaSourceTopic: String? = null
 
   @JsonProperty
+  @NotEmpty
   var kafkaDestTopic: String? = null
 
   @JsonProperty("kafkaStreams")
