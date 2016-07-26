@@ -1,0 +1,23 @@
+kafkaSourceTopic: etlIn
+kafkaDestTopic: etlOut
+
+# See https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/StreamsConfig.java
+# See https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/consumer/ConsumerConfig.java
+# See https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/producer/ProducerConfig.java
+kafkaStreams:
+  # Unique name for this Kafka Streams app
+  application.id: TweetEnrichEtl
+  # Kafka Brokers
+  bootstrap.servers: localhost:9092
+  # ZooKeeper
+  zookeeper.connect: localhost:2181
+  # Confluent Avro Schema Registry
+  schema.registry.url: http://localhost:8081
+
+  # If have no offset, consume from "earliest" or "latest"?
+  auto.offset.reset: earliest
+
+logging:
+  level: DEBUG
+  #loggers:
+  #  edu.harvard.gis.hhypermap.etl: DEBUG
