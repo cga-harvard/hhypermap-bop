@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>6.1.0</luceneMatchVersion>
+  <luceneMatchVersion>6.0.0</luceneMatchVersion>
 
   <!-- Data Directory
 
@@ -78,6 +78,9 @@
        or "BEST_COMPRESSION".
   -->
   <codecFactory class="solr.SchemaCodecFactory"/>
+
+  <!-- BOP: We prefer to have the schema declared, not manipulated with an API. -->
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Index Config - These settings control low-level behavior of indexing
