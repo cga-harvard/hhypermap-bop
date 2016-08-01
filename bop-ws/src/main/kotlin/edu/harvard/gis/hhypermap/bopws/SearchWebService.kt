@@ -19,6 +19,7 @@ package edu.harvard.gis.hhypermap.bopws
 import com.codahale.metrics.annotation.Timed
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonProperty // IntelliJ wants to remove this but it's needed!
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -43,6 +44,7 @@ import java.util.*
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
 import javax.validation.constraints.Pattern
+import javax.validation.constraints.Size // IntelliJ wants to remove this but it's needed!
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
