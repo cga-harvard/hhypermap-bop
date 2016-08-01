@@ -115,7 +115,9 @@ class SearchWebServiceTest {
   }
 
   @Test fun testTimeFacets() {
-    reqJson(uri("/tweets/search", "a.time.limit" to "1000", "a.time.gap" to "P1D",
+    // note q.time is disjoint from a.time.filter but we still get results
+    reqJson(uri("/tweets/search", "q.time" to "[2000-01-01 TO 2001-01-01]",
+            "a.time.limit" to "1000", "a.time.gap" to "P1D",
             "a.time.filter" to "[2015-04-01 TO 2015-04-03]"))["a.time"].let {
       assertEquals("P1D", it["gap"].textValue())
       assertEquals(2, it["counts"].size())
@@ -172,8 +174,10 @@ class SearchWebServiceTest {
   @Test fun testGeoHeatmapFacets() {
     var firstGridLevel = -1
     var firstCells = -1
-    val uri = uri("/tweets/search", "a.hm.limit" to "10",
-            "a.geo.filter" to "[30,-80 TO 50,-60]")
+    // note q.geo is disjoint from a.geo.filter but we still get results
+    val uri = uri("/tweets/search", "q.geo" to "[-50,-50 TO -49,-49]",
+            "a.hm.limit" to "10",
+            "a.hm.filter" to "[30,-80 TO 50,-60]")
     reqJson(uri)["a.hm"].let {
       firstGridLevel = it["gridLevel"].asInt()
       firstCells = it["rows"].asInt() * it["columns"].asInt()
@@ -185,7 +189,10 @@ class SearchWebServiceTest {
     reqJson(uri.queryParam("a.hm.limit", "1") //limit is effectively ignored
             .queryParam("a.hm.gridLevel", firstGridLevel.plus(1).toString()))["a.hm"].let {
       assertEquals(firstGridLevel + 1, it["gridLevel"].asInt())
-      assertEquals(firstCells * 4, it["rows"].asInt() * it["columns"].asInt())
+      val numCells = it["rows"].asInt() * it["columns"].asInt()
+      // it could be less than 4x the previous grid level since the edges are partial and thus
+      // some sub-cells may get filtered out.
+      assert(numCells >= 2*firstCells && numCells <= 4*firstCells, {"numCells: $numCells"})
     }
   }
 

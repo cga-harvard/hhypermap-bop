@@ -19,7 +19,6 @@ package edu.harvard.gis.hhypermap.bopws
 import com.codahale.metrics.annotation.Timed
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -31,6 +30,7 @@ import org.apache.solr.client.solrj.response.FacetField
 import org.apache.solr.client.solrj.response.QueryResponse
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrException
+import org.apache.solr.common.params.FacetParams
 import org.apache.solr.common.util.NamedList
 import org.locationtech.spatial4j.shape.Rectangle
 import java.io.OutputStream
@@ -43,7 +43,6 @@ import java.util.*
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
 import javax.validation.constraints.Pattern
-import javax.validation.constraints.Size
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
@@ -113,7 +112,9 @@ class SearchWebService(
         val (leftInst, rightInst) = parseDateTimeRange(qTime) // parses multiple formats
         val leftStr = leftInst?.toString() ?: "*" // normalize to Solr
         val rightStr = rightInst?.toString() ?: "*" // normalize to Solr
-        solrQuery.addFilterQuery("{!field f=$TIME_FILTER_FIELD}[$leftStr TO $rightStr]")
+        // note: tag to exclude in a.time
+        solrQuery.addFilterQuery("{!field tag=$TIME_FILTER_FIELD f=$TIME_FILTER_FIELD}" +
+                "[$leftStr TO $rightStr]")
         // TODO determine which subset of shards to use ("shards" param)
         // TODO add caching header if we didn't need to contact the realtime shard? expire at 1am
       }
@@ -121,7 +122,9 @@ class SearchWebService(
       // q.geo
       if (qGeo != null) {
         qGeoRect // side effect of validating qGeo
-        solrQuery.addFilterQuery("$GEO_FILTER_FIELD:$qGeo")// lucene query syntax
+        // note: can't use {!field} since it's the Lucene QParser that parses ranges
+        // note: tag to exclude in a.hm
+        solrQuery.addFilterQuery("{!lucene tag=$GEO_FILTER_FIELD df=$GEO_FILTER_FIELD}$qGeo")
       }
 
       //TODO q.geoPath
@@ -160,7 +163,8 @@ class SearchWebService(
                   " This is a soft maximum; less will usually be returned. A suggested value is" +
                   " 100." +
                   " Note that a.time.gap effectively ignores this value." +
-                  " See Solr docs for more details on the query/response format.")
+                  " See Solr docs for more details on the query/response format." +
+                  " The counts ignore the q.time filter if present.")
           aTimeLimit: Int,
 
           @QueryParam("a.time.gap") @Pattern(regexp = """P((\d+[YMWD])|(T\d+[HMS]))""")
@@ -180,7 +184,8 @@ class SearchWebService(
                   " can effectively ignore this value." +
                   " The response heatmap contains a counts grid that can be null or contain null" +
                   " rows when all its values would be 0.  " +
-                  " See Solr docs for more details on the response format.")
+                  " See Solr docs for more details on the response format." +
+                  " The counts ignore the q.geo filter if present.")
           aHmLimit: Int,
 
           @QueryParam("a.hm.gridLevel") @Min(1) @Max(100)
@@ -199,7 +204,8 @@ class SearchWebService(
           aTextLimit: Int,
 
           @QueryParam("a.user.limit") @DefaultValue("0") @Min(0) @Max(1000)
-          @ApiParam("Returns the most frequently occurring users.")
+          @ApiParam("Returns the most frequently occurring users." +
+                  " The counts ignore the q.user filter if present.")
           aUserLimit: Int
 
   ): SearchResponse {
@@ -311,15 +317,20 @@ class SearchWebService(
       throw WebApplicationException("Gap $aTimeGap is too small for this range $aTimeFilter")
     }
 
-    solrQuery.addDateRangeFacet(TIME_FILTER_FIELD,
-            Date.from(startInst), Date.from(endInst), gap.toSolr())
+    solrQuery.apply {
+      set(FacetParams.FACET, true)
+      add(FacetParams.FACET_RANGE, "{!ex=$TIME_FILTER_FIELD}$TIME_FILTER_FIELD") // exclude q.time
+      add("f.$TIME_FILTER_FIELD.${FacetParams.FACET_RANGE_START}", startInst.toString())
+      add("f.$TIME_FILTER_FIELD.${FacetParams.FACET_RANGE_END}", endInst.toString())
+      add("f.$TIME_FILTER_FIELD.${FacetParams.FACET_RANGE_GAP}", gap.toSolr())
+    }
   }
 
   private fun requestHeatmapFacet(aHmLimit: Int, aHmFilter: String?, aHmGridLevel: Int?, solrQuery: SolrQuery) {
     solrQuery.setFacet(true)
-    solrQuery.set("facet.heatmap", GEO_HEATMAP_FIELD)
+    solrQuery.set("facet.heatmap", "{!ex=$GEO_FILTER_FIELD}$GEO_HEATMAP_FIELD")
     val hmRectStr = aHmFilter ?: "[-90,-180 TO 90,180]"
-    solrQuery.set("facet.heatmap.geom", hmRectStr);
+    solrQuery.set("facet.heatmap.geom", hmRectStr)
     if (aHmGridLevel != null) {
       // note: aHmLimit is ignored in this case
       solrQuery.set("facet.heatmap.gridLevel", aHmGridLevel)
