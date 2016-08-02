@@ -124,7 +124,10 @@
           <artifactId>maven-shade-plugin</artifactId>
           <version>2.3</version>
           <configuration>
-            <createDependencyReducedPom>true</createDependencyReducedPom>
+            <createDependencyReducedPom>false</createDependencyReducedPom>
+            <shadedArtifactAttached>true</shadedArtifactAttached>
+            <!-- don't include version in final name; easier to script it's location later -->
+            <finalName>${project.artifactId}-shaded</finalName>
             <filters>
               <filter>
                 <artifact>*:*</artifact>
