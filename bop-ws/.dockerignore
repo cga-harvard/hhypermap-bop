@@ -1,0 +1,4 @@
+**/*
+!Dockerfile
+!target/bop-ws-shaded.jar
+!bop-ws.yml
