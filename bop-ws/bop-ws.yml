@@ -1,9 +1,13 @@
+#Note: these can be overridden via system properties with "dw." prefix, e.g.: -Ddw.indent=false
+# And we've customized DW to allow environment variables to do the same.
+
 #solrZkHost: localhost:9983
-solrUrl: http://localhost:8984/solr
+solrUrl: http://${SOLR_HOST:-localhost}:${SOLR_PORT:-8983}/solr
 solrCollection: bop
 
-server:
-  applicationContextPath: /bopws
+#  REFERENCE: http://www.dropwizard.io/1.0.0/docs/manual/configuration.html
+#server:
+#  applicationContextPath: /bop-ws
 
 indent: true
 

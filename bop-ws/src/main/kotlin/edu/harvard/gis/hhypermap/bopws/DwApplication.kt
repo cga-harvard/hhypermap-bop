@@ -16,8 +16,10 @@
 
 package edu.harvard.gis.hhypermap.bopws
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.SerializationFeature
 import io.dropwizard.Application
+import io.dropwizard.configuration.*
 import io.dropwizard.jersey.errors.ErrorMessage
 import io.dropwizard.lifecycle.Managed
 import io.dropwizard.setup.Bootstrap
@@ -33,10 +35,45 @@ import javax.ws.rs.core.Response
 import javax.ws.rs.ext.ExceptionMapper
 import javax.ws.rs.ext.Provider
 
+fun main(args: Array<String>) = DwApplication().run(*args)
+
+val log = LoggerFactory.getLogger(DwApplication::class.java.`package`.name)!!
+
 /**
  * Dropwizard main entry for our web-service
  */
 class DwApplication : Application<DwConfiguration>() {
+
+  override fun initialize(bootstrap: Bootstrap<DwConfiguration>) {
+    // Enable environment variables to override System properties
+    bootstrap.configurationFactoryFactory = ConfigurationFactoryFactory { clazz, validator, objectMapper, prefix ->
+      val propertyPrefix = "dw."
+      object : YamlConfigurationFactory<DwConfiguration>(clazz, validator, objectMapper, propertyPrefix) {
+        override fun build(node: JsonNode, path: String): DwConfiguration {
+          // this logic is similar to what super.build does for sys props
+          for ((prefName, value) in System.getenv()) {
+            if (prefName.startsWith(propertyPrefix)) {
+              val configName = prefName.substring(propertyPrefix.length)
+              addOverride(node, configName, value)
+            }
+          }
+          return super.build(node, path)
+        }
+      }
+    }
+    // Enable ${MYENVVAR} in the yaml
+    bootstrap.configurationSourceProvider = SubstitutingSourceProvider(
+            bootstrap.configurationSourceProvider,
+            EnvironmentVariableSubstitutor(false))
+
+    // Swagger:
+    bootstrap.addBundle(
+            object : SwaggerBundle<DwConfiguration>() {
+              override fun getSwaggerBundleConfiguration(configuration: DwConfiguration): SwaggerBundleConfiguration?
+                      = configuration.swaggerBundleConfiguration
+            }
+    )
+  }
 
   override fun run(configuration: DwConfiguration, environment: Environment) {
     // SOLR: Ensure we shut Solr down
@@ -68,16 +105,6 @@ class DwApplication : Application<DwConfiguration>() {
       environment.objectMapper.enable(SerializationFeature.INDENT_OUTPUT)
   }
 
-  override fun initialize(bootstrap: Bootstrap<DwConfiguration>) {
-    // Swagger:
-    bootstrap.addBundle(
-            object : SwaggerBundle<DwConfiguration>() {
-              override fun getSwaggerBundleConfiguration(configuration: DwConfiguration): SwaggerBundleConfiguration?
-                      = configuration.swaggerBundleConfiguration
-            }
-    )
-  }
-
   /** Map [DateTimeParseException] to 400 */
   @Provider
   object DTPExceptionMapper : ExceptionMapper<java.time.format.DateTimeParseException> {
@@ -88,7 +115,3 @@ class DwApplication : Application<DwConfiguration>() {
 
   }
 }
-
-fun main(args: Array<String>) = DwApplication().run(*args)
-
-val log = LoggerFactory.getLogger(DwApplication::class.java.`package`.name)
