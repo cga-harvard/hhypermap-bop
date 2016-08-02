@@ -17,7 +17,7 @@
 package edu.harvard.gis.hhypermap.etl
 
 import com.codahale.metrics.MetricRegistry
-import io.dropwizard.configuration.ConfigurationFactory
+import io.dropwizard.configuration.YamlConfigurationFactory
 import io.dropwizard.jackson.Jackson
 import io.dropwizard.logging.BootstrapLogging
 import io.dropwizard.validation.BaseValidator
@@ -35,7 +35,7 @@ val log = LoggerFactory.getLogger("edu.harvard.gis.hhypermap.etl")!!
 fun main(args: Array<String>) {
   BootstrapLogging.bootstrap()
   val configFile: File = File(args[0])
-  val etlConfig = ConfigurationFactory<EtlConfiguration>(
+  val etlConfig = YamlConfigurationFactory<EtlConfiguration>(
           EtlConfiguration::class.java,
           BaseValidator.newValidator(),
           Jackson.newObjectMapper(),
