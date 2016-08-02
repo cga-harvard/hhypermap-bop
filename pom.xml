@@ -156,28 +156,27 @@
 
       </plugins>
     </pluginManagement>
+
     <plugins>
+
+      <!-- Expose Git commit info; see https://github.com/ktoso/maven-git-commit-id-plugin -->
       <plugin>
-        <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-maven-plugin</artifactId>
-        <version>${kotlin.version}</version>
+        <groupId>pl.project13.maven</groupId>
+        <artifactId>git-commit-id-plugin</artifactId>
+        <version>2.2.1</version>
         <executions>
           <execution>
-            <id>compile</id>
-            <phase>compile</phase>
+            <phase>validate</phase>
             <goals>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>test-compile</id>
-            <phase>test-compile</phase>
-            <goals>
-              <goal>test-compile</goal>
+              <goal>revision</goal>
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <generateGitPropertiesFile>true</generateGitPropertiesFile>
+        </configuration>
       </plugin>
+
     </plugins>
 
   </build>
