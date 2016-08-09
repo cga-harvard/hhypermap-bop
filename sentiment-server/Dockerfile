@@ -1,6 +1,4 @@
-# TODO the source is not yet published; get dkakkar to do it
-#   https://github.com/dkakkar/Twitter-Sentiment-Classifier/pull/3
-FROM dkakkar/twitter-sentiment-classifier
+FROM devikakakkar29/twitter-sentiment-classifier-image
 
 MAINTAINER David Smiley <dsmiley@apache.org>
 
@@ -16,4 +14,4 @@ EXPOSE $PORT
 #    program to ensure it doesn't fail for that and other reasons.
 
 # (-u is important)
-CMD tcpserver -v -D 0.0.0.0 $PORT python3 -u sentiment.py
+CMD exec tcpserver -v -D 0.0.0.0 $PORT python3 -u sentiment.py
