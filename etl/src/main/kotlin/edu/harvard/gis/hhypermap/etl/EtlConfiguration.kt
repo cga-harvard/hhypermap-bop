@@ -37,4 +37,11 @@ class EtlConfiguration {
   @JsonProperty("logging")
   val loggingConfig: LoggingFactory = DefaultLoggingFactory()
 
+  @JsonProperty("sentiment.recompute")
+  var sentimentRecompute = false
+
+  @NotEmpty
+  @JsonProperty("sentiment.server")
+  var sentimentServer: String? = null
+
 }

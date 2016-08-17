@@ -10,6 +10,11 @@
     {"name": "coord_lat",   "type": "double"},
     {"name": "coord_lon",   "type": "double"},
     {"name": "text",        "type": "string"},
-    {"name": "lang",        "type": "string", "default": "und"}
+    {"name": "lang",        "type": "string", "default": "und"},
+
+    {"name": "sentiment",                     "default":"und",
+        "type": {"name":"Sentiment", "type": "enum", "symbols":["pos","neg","und"],
+        "doc":"See https://github.com/dkakkar/Twitter-Sentiment-Classifier"
+        }}
   ]
 }

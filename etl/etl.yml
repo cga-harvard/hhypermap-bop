@@ -17,7 +17,9 @@ kafkaStreams:
   # If have no offset, consume from "earliest" or "latest"?
   auto.offset.reset: earliest
 
+sentiment.server: localhost:1234
+
 logging:
-  level: DEBUG
+  #level: DEBUG
   #loggers:
   #  edu.harvard.gis.hhypermap.etl: DEBUG
