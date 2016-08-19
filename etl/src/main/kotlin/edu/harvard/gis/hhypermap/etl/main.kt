@@ -115,11 +115,18 @@ fun buildConfig(configFile: File? = null): EtlConfiguration {
     configProvider = ResourceConfigurationSourceProvider()
     configPath = "etl.yml"
   }
+  // propagate env to sys props so DropWizard will see it
+  val propertyPrefix = "dw." //sysprop & env prefix
+  for ((prefName, value) in System.getenv()) {
+    if (prefName.startsWith(propertyPrefix) && System.getProperty(prefName) == null) {
+      System.setProperty(prefName, value)
+    }
+  }
   return YamlConfigurationFactory<EtlConfiguration>(
           EtlConfiguration::class.java,
           BaseValidator.newValidator(),
           Jackson.newObjectMapper(),
-          "etl")//sysprop prefix
+          propertyPrefix)
           .build(configProvider, configPath)
 }
 
