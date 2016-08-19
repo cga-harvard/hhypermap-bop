@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import io.dropwizard.logging.DefaultLoggingFactory
 import io.dropwizard.logging.LoggingFactory
 import org.hibernate.validator.constraints.NotEmpty
+import javax.validation.constraints.NotNull
 
 class EtlConfiguration {
 
@@ -32,16 +33,18 @@ class EtlConfiguration {
   var kafkaDestTopic: String? = null
 
   @JsonProperty("kafkaStreams")
+  @NotNull
   val kafkaStreamsConfig: MutableMap<String,Any> = mutableMapOf()
 
   @JsonProperty("logging")
+  @NotNull
   val loggingConfig: LoggingFactory = DefaultLoggingFactory()
 
   @JsonProperty("sentiment.recompute")
   var sentimentRecompute = false
 
-  @NotEmpty
   @JsonProperty("sentiment.server")
+  @NotEmpty
   var sentimentServer: String? = null
 
 }
