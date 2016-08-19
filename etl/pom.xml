@@ -25,12 +25,12 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>etl</artifactId>
+  <artifactId>etl-enrich</artifactId>
   <version>1.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
 
-  <name>etl</name>
+  <name>etl-enrich</name>
   <description>ETL Kafka to Kafka, enriching each item</description>
 
   <properties>
@@ -139,10 +139,34 @@
         <artifactId>kotlin-maven-plugin</artifactId>
       </plugin>
 
-      <!-- create a single fat jar -->
+      <!-- note: this plugin doesn't support docker-compose, so we do integration-testing
+       semi-manually instead of doing a verbose equivalent in something this understands. -->
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <configuration>
+          <images>
+            <image>
+              <name>harvardcga/${project.artifactId}</name>
+              <build>
+                <from>java:openjdk-8-jre-alpine</from>
+                <entryPoint>
+                  <!-- TODO ? -XX:+UseSerialGC -->
+                  <exec>
+                    <arg>java</arg>
+                    <arg>-Xmx256M</arg>
+                    <arg>-cp</arg>
+                    <arg>maven/*</arg>
+                    <arg>${mainClass}</arg>
+                  </exec>
+                </entryPoint>
+                <assembly>
+                  <descriptorRef>artifact-with-dependencies</descriptorRef>
+                </assembly>
+              </build>
+            </image>
+          </images>
+        </configuration>
       </plugin>
 
       <plugin>
@@ -151,9 +175,6 @@
         <version>1.5.0</version>
         <configuration>
           <mainClass>${mainClass}</mainClass>
-          <arguments>
-            <argument>etl.yml</argument>
-          </arguments>
         </configuration>
       </plugin>
 

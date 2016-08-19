@@ -10,7 +10,6 @@ docker start sent-server
 You can see the volume via `docker volume ls`
 You can see the container via `docker ps -a` 
 
-
 ### Running the ETL tests ###
 
 docker-compose -f src/test/docker-compose-integration-test.yml up --abort-on-container-exit
@@ -30,10 +29,14 @@ docker run --rm -e ZK_HOSTS=192.168.100.102:2181 sheepkiller/kafka-manager:1.3.1
 
 Then add the cluster
 
-### Observing Docker ###
+### Managing Docker ###
 
-# top containers
+#### top containers ####
 docker stats
 
-# remove containers that probably aren't needed
+#### remove containers that probably aren't needed ####
 docker rm $(docker ps -q -f status=exited)
+
+### Build Docker Image ###
+
+mvn package -DskipTests docker:build
