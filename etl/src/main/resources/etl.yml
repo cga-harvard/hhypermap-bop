@@ -20,6 +20,6 @@ kafkaStreams:
 sentiment.server: localhost:1234
 
 logging:
-  #level: DEBUG
+  level: INFO
   #loggers:
   #  edu.harvard.gis.hhypermap.etl: DEBUG

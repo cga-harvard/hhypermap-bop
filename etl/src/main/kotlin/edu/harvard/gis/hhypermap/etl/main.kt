@@ -18,6 +18,9 @@ package edu.harvard.gis.hhypermap.etl
 
 import com.codahale.metrics.JmxReporter
 import com.codahale.metrics.MetricRegistry
+import io.dropwizard.configuration.ConfigurationSourceProvider
+import io.dropwizard.configuration.FileConfigurationSourceProvider
+import io.dropwizard.configuration.ResourceConfigurationSourceProvider
 import io.dropwizard.configuration.YamlConfigurationFactory
 import io.dropwizard.jackson.Jackson
 import io.dropwizard.logging.BootstrapLogging
@@ -75,8 +78,8 @@ object CLOSE_HOOKS {
 
 /** Main CLI entrypoint */
 fun main(args: Array<String>) {
-  check(args.size == 1, {"expecting single arg to the yaml config file"})
-  val configFile = File(args[0])
+  check(args.size <= 1, {"Accepts optionally the yaml config file"})
+  val configFile: File? = if (args.size == 1) File(args[0]) else null
 
   BootstrapLogging.bootstrap()
 
@@ -101,13 +104,24 @@ fun main(args: Array<String>) {
   }
 }
 
-fun buildConfig(configFile: File): EtlConfiguration =
-        YamlConfigurationFactory<EtlConfiguration>(
+fun buildConfig(configFile: File? = null): EtlConfiguration {
+  val configProvider: ConfigurationSourceProvider
+  val configPath: String
+  if (configFile != null) {
+    configProvider = FileConfigurationSourceProvider()
+    configPath = configFile.toString()
+  } else {
+    // TODO take optional String arg and see if it's a URL?
+    configProvider = ResourceConfigurationSourceProvider()
+    configPath = "etl.yml"
+  }
+  return YamlConfigurationFactory<EtlConfiguration>(
           EtlConfiguration::class.java,
           BaseValidator.newValidator(),
           Jackson.newObjectMapper(),
           "etl")//sysprop prefix
-        .build(configFile)
+          .build(configProvider, configPath)
+}
 
 fun buildStreams(etlConfig: EtlConfiguration): KafkaStreams {
   etlConfig.kafkaStreamsConfig["key.serde"] = Serdes.LongSerde::class.java
