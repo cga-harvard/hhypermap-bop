@@ -1,0 +1,20 @@
+---
+version: '2'
+name: geoadmin
+services:
+  
+  solr:
+    extends:
+      file: docker-compose.yml
+      service: solr
+    # our custom solr image will accept an empty solr-home; it'll be populated on first run
+    environment:
+      SOLR_HOME: /var/solrhome
+      #TODO associate with proxy/load-balancer? But then need to secure it.
+    stateful: true
+    volumes:
+      - /media/attached/solr-geo-admin-home:/var/solrhome
+    deploy:
+      wait_for_port: 8983
+    affinity:
+      - node==enrich1.novalocal
