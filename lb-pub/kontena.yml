@@ -1,0 +1,15 @@
+---
+version: '2'
+name: lb-pub
+services:
+  loadbalancer:
+    image: kontena/lb:latest
+    ports:
+      - 80:80
+      - 443:443
+    affinity:
+      - node==bop-pub.novalocal
+    secrets:
+      - secret: bop_cert
+        name: SSL_CERTS
+        type: env
