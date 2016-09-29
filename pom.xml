@@ -27,7 +27,7 @@
 
   <modules>
     <module>bop-ws</module>
-    <module>etl</module>
+    <module>enrich</module>
   </modules>
 
   <properties>

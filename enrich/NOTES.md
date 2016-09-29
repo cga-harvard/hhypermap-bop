@@ -14,7 +14,7 @@ You can see the container via `docker ps -a`
 
 docker-compose -f src/test/docker-compose-integration-test.yml up --abort-on-container-exit
 
-cd etl
+cd enrich
 mvn test
 
 docker-compose docker-compose-integration-test.yml down
