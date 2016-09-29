@@ -1,0 +1,59 @@
+---
+version: '2'
+name: kafka
+services:
+  
+  #TODO HA configuration. See https://github.com/confluentinc/cp-docker-images/blob/master/examples/kafka-cluster/docker-compose.yml
+  zookeeper:
+    extends:
+      file: docker-compose.yml
+      service: zookeeper
+    stateful: true
+    deploy:
+      wait_for_port: 2181
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      
+  #TODO HA configuration. See https://github.com/confluentinc/cp-docker-images/blob/master/examples/kafka-cluster/docker-compose.yml
+  kafka:
+    extends:
+      file: docker-compose.yml
+      service: kafka
+    stateful: true
+    deploy:
+      wait_for_port: 9092
+    affinity:
+      - node==kafka1.novalocal
+    volumes:
+      - /media/attached/kafka/data:/var/lib/kafka/data
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: ${project}-zookeeper.kontena.local:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${HOSTNAME}:9092
+      
+  kafka-manager:
+    image: harvardcga/kafka-manager
+    build:
+      # we make the http context path configurable (and do some other housekeeping).
+      context: ./
+      dockerfile: kafka-manager.Dockerfile
+    # (not stateful; state is saved into ZK)
+    depends_on:
+      - zookeeper
+      - kafka
+    external_links:
+      - lb-pub-loadbalancer
+    environment:
+      ZK_HOSTS: ${project}-zookeeper.kontena.local:2181
+      KONTENA_LB_INTERNAL_PORT: 9000
+      KONTENA_LB_VIRTUAL_PATH: /kafka-manager
+      KONTENA_LB_KEEP_VIRTUAL_PATH: true
+      KM_HTTP_CONTEXT: /kafka-manager
+      KM_USERNAME: "admin"
+    secrets:
+      - secret: KAFKA_MANAGER_PASSWORD
+        name: KM_PASSWORD
+        type: env
+
+#TODO 3 zk services
+#TODO 2 kafka services
