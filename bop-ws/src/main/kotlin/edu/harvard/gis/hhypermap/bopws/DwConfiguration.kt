@@ -64,14 +64,14 @@ class DwConfiguration : Configuration() {
       if (solrUrl != null) {
         throw Exception("solrUrl is mutually exclusive with solrZkHost")
       }
-      return CloudSolrClient(solrZkHost).apply {
+      return CloudSolrClient.Builder().withZkHost(solrZkHost).build().apply {
         defaultCollection = solrCollection
       }
     } else {
       var url = solrUrl
       if (solrCollection != null)
         url += "/$solrCollection"
-      return HttpSolrClient(url)
+      return HttpSolrClient.Builder(url).build()
     }
   }
 
