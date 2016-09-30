@@ -1,16 +1,14 @@
 # Preparation
 
-  alias solr6='/SmileyDev/Search/solr-6.0.1/bin/solr'
-
-Start Solr in SolrCloud mode and in the foreground (to make errors obvious).
+Start Solr in SolrCloud mode.
 We use this directory here as the "solr home" only to keep the state local
 to this project and not intermingled with other possible Solr projects.
   
-  solr6 start -c -f -s bop-solrhome/
+    docker run --rm --name bop-solr -v "$(pwd)/bop-solrhome/:/opt/solr/server/solr" -p 8983:8983 harvardcga/solr -c
 
 Explicitly upload a config set (also to update it when it changes)
 
-  solr6 zk -upconfig -n bop -d bop-solrhome/configsets/bop/conf/ -z localhost:9983
+    docker exec -ti bop-solr solr zk -upconfig -n bop -d server/solr/configsets/bop/conf/ -z localhost:9983
   
 Reload a collection using this config (obviously only after it's there)
 
@@ -20,7 +18,7 @@ Reload a collection using this config (obviously only after it's there)
 
 Create the "bop" collection WITHOUT time sharding (purely for testing).
 
-  solr6 create_collection -c bop -n bop
+  docker exec -ti bop-solr solr create_collection -c bop -n bop
   
 Add an alias, "tweets"
 
