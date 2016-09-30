@@ -86,14 +86,6 @@
       <version>0.8.10</version>
     </dependency>
 
-    <!-- Ensure that jackson-databind version is mutually compatible. between DropWizard and
-    Kafka stuff, so we specify explicitly. -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>2.7.6</version>
-    </dependency>
-
   </dependencies>
 
   <repositories>
