@@ -21,11 +21,11 @@ docker-compose docker-compose-integration-test.yml down
 
 #### Examining ####
 
-docker run -ti confluent/tools kafka-avro-console-consumer --topic etlOut --zookeeper 192.168.100.102:2181 --from-beginning --property schema.registry.url=http://192.168.100.102:8081
+docker run -ti confluent/tools kafka-console-consumer --topic etlOut --zookeeper 192.168.100.102:2181 --from-beginning
 
 ### Managing Kafka ###
 
-docker run --rm -e ZK_HOSTS=192.168.100.102:2181 sheepkiller/kafka-manager:1.3.1.6
+docker run --rm -e ZK_HOSTS=192.168.100.102:2181 harvardcga/kafka-manager
 
 Then add the cluster
 

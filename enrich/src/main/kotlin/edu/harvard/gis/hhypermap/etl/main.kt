@@ -18,6 +18,7 @@ package edu.harvard.gis.hhypermap.etl
 
 import com.codahale.metrics.JmxReporter
 import com.codahale.metrics.MetricRegistry
+import com.fasterxml.jackson.databind.node.ObjectNode
 import io.dropwizard.configuration.ConfigurationSourceProvider
 import io.dropwizard.configuration.FileConfigurationSourceProvider
 import io.dropwizard.configuration.ResourceConfigurationSourceProvider
@@ -25,9 +26,6 @@ import io.dropwizard.configuration.YamlConfigurationFactory
 import io.dropwizard.jackson.Jackson
 import io.dropwizard.logging.BootstrapLogging
 import io.dropwizard.validation.BaseValidator
-import org.apache.avro.generic.GenericData
-import org.apache.avro.generic.GenericEnumSymbol
-import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.KafkaStreams
@@ -43,7 +41,7 @@ val log = LoggerFactory.getLogger("edu.harvard.gis.hhypermap.etl")!!
 val METRIC_REGISTRY = MetricRegistry()
 
 object CLOSE_HOOKS {
-  val hooks = ArrayDeque<()-> Unit>()
+  val hooks = ArrayDeque<() -> Unit>()
 
   init {
     Runtime.getRuntime().addShutdownHook(Thread(null, {
@@ -132,7 +130,7 @@ fun buildConfig(configFile: File? = null): EtlConfiguration {
 
 fun buildStreams(etlConfig: EtlConfiguration): KafkaStreams {
   etlConfig.kafkaStreamsConfig["key.serde"] = Serdes.LongSerde::class.java
-  etlConfig.kafkaStreamsConfig["value.serde"] = GenericAvroSerde::class.java
+  etlConfig.kafkaStreamsConfig["value.serde"] = JsonSerde::class.java
   val streamsConfig = StreamsConfig(etlConfig.kafkaStreamsConfig)
 
   return buildStreams(streamsConfig, etlConfig.kafkaSourceTopic!!, etlConfig.kafkaDestTopic!!,
@@ -140,15 +138,15 @@ fun buildStreams(etlConfig: EtlConfiguration): KafkaStreams {
 }
 
 fun buildStreams(streamsConfig: StreamsConfig, sourceTopic: String, destTopic: String,
-                 vararg valueMappers: ValueMapper<GenericRecord,GenericRecord>): KafkaStreams {
+                 vararg valueMappers: ValueMapper<ObjectNode,ObjectNode>): KafkaStreams {
   val builder = KStreamBuilder()
 
   @Suppress("UNCHECKED_CAST")
   val keySerde: Serde<Long> = streamsConfig.keySerde() as Serde<Long>
   @Suppress("UNCHECKED_CAST")
-  val valueSerde: Serde<GenericRecord> = streamsConfig.valueSerde() as Serde<GenericRecord>
+  val valueSerde: Serde<ObjectNode> = streamsConfig.valueSerde() as Serde<ObjectNode>
 
-  builder.stream<Long, GenericRecord>(keySerde, valueSerde, sourceTopic).let {
+  builder.stream<Long, ObjectNode>(keySerde, valueSerde, sourceTopic).let {
     // TODO write a parallel ValueMapper? or can Kafka Streams do this already?
     var res = it
     for (valueMapper in valueMappers) {
@@ -160,7 +158,9 @@ fun buildStreams(streamsConfig: StreamsConfig, sourceTopic: String, destTopic: S
   return KafkaStreams(builder, streamsConfig)
 }
 
-class SentimentEnricher(etlConfig: EtlConfiguration) : ValueMapper<GenericRecord,GenericRecord> {
+val SENTIMENT_KEY = "hcga_sentiment"
+
+class SentimentEnricher(etlConfig: EtlConfiguration) : ValueMapper<ObjectNode,ObjectNode> {
   val sentimentAnalyzer = SentimentAnalyzer(etlConfig.sentimentServer!!)
   val shouldRecompute = etlConfig.sentimentRecompute
 
@@ -168,14 +168,12 @@ class SentimentEnricher(etlConfig: EtlConfiguration) : ValueMapper<GenericRecord
     CLOSE_HOOKS.add {sentimentAnalyzer.close()}
   }
 
-  override fun apply(record: GenericRecord): GenericRecord {
-    val sentField = record.schema.getField("sentiment")
-    val existingSentiment = record.get(sentField.pos()) as GenericEnumSymbol
-    if (shouldRecompute || existingSentiment.toString() == "und") {
+  override fun apply(record: ObjectNode): ObjectNode {
+    if (shouldRecompute || ! record.has(SENTIMENT_KEY)) {
       log.trace("Sentiment enriching: processing {}", record)
-      val tweetText = (record.get("text") as CharSequence).toString()
+      val tweetText = record.get("text").textValue()
       val sentimentSymbol = sentimentAnalyzer.calcSentiment(tweetText).toString() // assume right format
-      record.put(sentField.pos(), GenericData.get().createEnum(sentimentSymbol, record.schema))
+      record.put(SENTIMENT_KEY, sentimentSymbol)
     } else {
       log.trace("Sentiment enriching: skipping {}", record)
     }

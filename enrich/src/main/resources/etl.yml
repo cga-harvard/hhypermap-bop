@@ -11,8 +11,6 @@ kafkaStreams:
   bootstrap.servers: localhost:9092
   # ZooKeeper
   zookeeper.connect: localhost:2181
-  # Confluent Avro Schema Registry
-  schema.registry.url: http://localhost:8081
 
   # If have no offset, consume from "earliest" or "latest"?
   auto.offset.reset: earliest

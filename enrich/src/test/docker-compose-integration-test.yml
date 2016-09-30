@@ -32,20 +32,6 @@ services:
     # because for testing:
     #tmpfs: "/var/lib/kafka"
 
-  schema-registry:
-    image: confluent/schema-registry
-    depends_on:
-      - kafka
-      - zookeeper
-    ports:
-      - "8081:8081"
-    environment:
-      SR_KAFKASTORE_CONNECTION_URL: "zookeeper:2181"
-      SR_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
-    # Sleeping is the only (simple) way I found to avoid a startup race condition.
-    entrypoint: ["sh", "-c", "sleep 6 && exec schema-registry-docker.sh"]
-
-
 volumes:
 
   classifier-data:
