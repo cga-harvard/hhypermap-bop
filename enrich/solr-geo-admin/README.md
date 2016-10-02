@@ -53,13 +53,18 @@ Set two important env vars:
     $ export DOCKER_CONTAINER=geoadmin-solr-1
     $ export DATA_DIR=/media/attached
 
-Repeat for ADMIN2, US_CENSUS_TRACT, US_MA_CENSUS_BLOCK:
-    $ ./setup-solr.sh US_CENSUS_TRACT
-    $ ./shapefile-to-csv.sh US_CENSUS_TRACT
-    $ ./import-solr.sh US_CENSUS_TRACT
+Then
+    $ for COLLECTION in "ADMIN2" "US_CENSUS_TRACT" "US_MA_CENSUS_BLOCK"; do
+    $   ./shapefile-to-csv.sh $COLLECTION
+    $   ./setup-solr.sh $COLLECTION
+    $   ./import-solr.sh $COLLECTION
+    $ done
     
 If for some reason you need to start over from a clean slate, you may need to clear out Solr's home directory, mounted in Kontena
-at /media/attached/solr-geo-admin-home   But you won't need to run shapefile-to-csv again unless you remove the CSV file.  The CSVs will be placed in DATA_DIR.
+at /media/attached/solr-geo-admin-home (while Solr isn't running!). You can
+also execute this:
+curl -X POST "http://localhost:8983/solr/admin/cores?action=UNLOAD&core=$COLLECTION&deleteInstanceDir=true"
+But you won't need to run shapefile-to-csv again unless you remove the CSV file.  The CSVs will be placed in DATA_DIR.
 
 
 Querying

@@ -13,9 +13,11 @@ kafkaStreams:
   zookeeper.connect: localhost:2181
 
   # If have no offset, consume from "earliest" or "latest"?
-  auto.offset.reset: earliest
+  #auto.offset.reset: latest
 
 sentiment.server: localhost:1234
+
+geoAdmin.solrConnectionString: http://localhost:8983/solr/
 
 logging:
   level: INFO

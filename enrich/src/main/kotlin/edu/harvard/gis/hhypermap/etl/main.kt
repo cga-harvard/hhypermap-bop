@@ -18,6 +18,7 @@ package edu.harvard.gis.hhypermap.etl
 
 import com.codahale.metrics.JmxReporter
 import com.codahale.metrics.MetricRegistry
+import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.dropwizard.configuration.ConfigurationSourceProvider
 import io.dropwizard.configuration.FileConfigurationSourceProvider
@@ -32,6 +33,9 @@ import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.KStreamBuilder
 import org.apache.kafka.streams.kstream.ValueMapper
+import org.apache.solr.client.solrj.StreamingResponseCallback
+import org.apache.solr.common.SolrDocument
+import org.apache.solr.common.params.ModifiableSolrParams
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.*
@@ -133,12 +137,18 @@ fun buildStreams(etlConfig: EtlConfiguration): KafkaStreams {
   etlConfig.kafkaStreamsConfig["value.serde"] = JsonSerde::class.java
   val streamsConfig = StreamsConfig(etlConfig.kafkaStreamsConfig)
 
+  val enrichers: MutableList<ValueMapper<ObjectNode,ObjectNode>> = mutableListOf()
+  enrichers.add( SentimentEnricher(etlConfig) )
+  for (col in etlConfig.geoAdminCollections) {
+    enrichers.add(GeoAdminEnricher(etlConfig, col))
+  }
+
   return buildStreams(streamsConfig, etlConfig.kafkaSourceTopic!!, etlConfig.kafkaDestTopic!!,
-          SentimentEnricher(etlConfig))
+          enrichers)
 }
 
 fun buildStreams(streamsConfig: StreamsConfig, sourceTopic: String, destTopic: String,
-                 vararg valueMappers: ValueMapper<ObjectNode,ObjectNode>): KafkaStreams {
+                 valueMappers: List<ValueMapper<ObjectNode,ObjectNode>>): KafkaStreams {
   val builder = KStreamBuilder()
 
   @Suppress("UNCHECKED_CAST")
@@ -168,15 +178,66 @@ class SentimentEnricher(etlConfig: EtlConfiguration) : ValueMapper<ObjectNode,Ob
     CLOSE_HOOKS.add {sentimentAnalyzer.close()}
   }
 
-  override fun apply(record: ObjectNode): ObjectNode {
-    if (shouldRecompute || ! record.has(SENTIMENT_KEY)) {
-      log.trace("Sentiment enriching: processing {}", record)
-      val tweetText = record.get("text").textValue()
+  override fun apply(tweet: ObjectNode): ObjectNode {
+    if (shouldRecompute || ! tweet.has(SENTIMENT_KEY)) {
+      log.trace("Sentiment enriching: processing {}", tweet)
+      val tweetText = tweet.get("text").textValue()
       val sentimentSymbol = sentimentAnalyzer.calcSentiment(tweetText).toString() // assume right format
-      record.put(SENTIMENT_KEY, sentimentSymbol)
+      tweet.put(SENTIMENT_KEY, sentimentSymbol)
     } else {
-      log.trace("Sentiment enriching: skipping {}", record)
+      log.trace("Sentiment enriching: skipping {}", tweet)
     }
-    return record
+    return tweet
+  }
+}
+
+class GeoAdminEnricher(etlConfig: EtlConfiguration,
+                                coll: String) : ValueMapper<ObjectNode,ObjectNode> {
+  val shouldRecompute = etlConfig.geoAdminRecompute
+  val solrClient = etlConfig.newSolrClient(etlConfig.geoAdminSolrConnectionString +coll)
+  val jsonKey = "hcga_geoadmin_" + coll.toLowerCase()
+  init {
+    CLOSE_HOOKS.add {solrClient.close()}
+  }
+
+  override fun apply(tweet: ObjectNode): ObjectNode {
+    if (shouldRecompute || ! tweet.has(jsonKey)) {
+      log.trace("Geo Admin {} enriching: processing {}", jsonKey, tweet)
+      val coordLonLatArray = tweet.get("coordinates")?.get("coordinates") as ArrayNode?
+              ?: throw RuntimeException("Expected coordinates/coordinates in this data")
+      val lon = coordLonLatArray.get(0).asDouble()!!
+      val lat = coordLonLatArray.get(1).asDouble()!!
+
+      val params = ModifiableSolrParams()
+      params.set("qt", "/hcga_enrich") // sets 'fl'
+      params.set("q", "{!cache=false field f=WKT}Intersects(POINT($lon $lat))")
+      params.set("rows", 50) // if we reach 50, that'd be very unexpected
+      //TODO sort somehow?  put that in request handler
+
+      // FYI see SOLR-5969 distributed tracing.
+      params.set("tweetId", tweet.get("id_str").asText()!!) // for tracing/debugging
+
+      // do it!
+      val jsonResultArray = tweet.putArray(jsonKey)
+      solrClient.queryAndStreamResponse(params, object: StreamingResponseCallback() {
+        override fun streamDocListInfo(numFound: Long, start: Long, maxScore: Float?) {
+          if (numFound > 50) {
+            log.warn("Found high responses: $numFound and we likely dropped some.")
+          }
+        }
+
+        override fun streamSolrDocument(doc: SolrDocument) {
+          // add object holding the field=value of the doc (assume string value)
+          val obj = jsonResultArray.addObject()
+          for ((f,v) in doc) {
+            obj.put(f, v as String)
+          }
+        }
+      })
+
+    } else {
+      log.trace("Sentiment enriching: skipping {}", tweet)
+    }
+    return tweet
   }
 }

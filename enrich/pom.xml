@@ -86,14 +86,27 @@
       <version>0.8.10</version>
     </dependency>
 
-  </dependencies>
+    <!-- Solr Core for EmbeddedSolrServer (but brings in a ton of deps) -->
+    <dependency>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-core</artifactId>
+      <version>${solr.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vividsolutions</groupId>
+      <artifactId>jts-core</artifactId>
+      <version>1.14.0</version>
+      <scope>runtime</scope>
+    </dependency>
 
-  <repositories>
-    <repository>
-      <id>confluent</id>
-      <url>http://packages.confluent.io/maven/</url>
-    </repository>
-  </repositories>
+    <!-- avoid dependency version conflict by explicitly declaring -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>19.0</version>
+    </dependency>
+
+  </dependencies>
 
   <build>
     <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>

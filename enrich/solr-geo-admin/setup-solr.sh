@@ -17,23 +17,27 @@ fi
 CONFIGSETS="/opt/solr/server/solr/configsets"
 
 # Define a schema snippet. Do this now because we fail early if the collection name isn't supported.
+# Also define the "fl" (field list) mapping what will ultimately get put into tweets
 case "$COLLECTION" in
   "ADMIN2" )
     ADDFIELDS='
-    "add-field":{ "name":"ADMIN2",      "type":"string", "indexed":true, "stored":true, "docValues":true},
-    "add-field":{ "name":"ADMIN2_TXT",  "type":"string", "indexed":false, "stored":true, "docValues":true},
+    "add-field":{ "name":"Admin2",      "type":"string", "indexed":true, "stored":true, "docValues":true, "required":true},
+    "add-field":{ "name":"ADMIN2_TXT",  "type":"string", "indexed":false, "stored":true, "docValues":true, "required":true},
     '
+    FL='id:field(Admin2),txt:field(ADMIN2_TXT)'
     ;;
   "US_CENSUS_TRACT" )
     ADDFIELDS='
-    "add-field":{ "name":"GEOD10-TRACT","type":"string", "docValues":true},
+    "add-field":{ "name":"GEOID10",     "type":"string", "docValues":true, "required":true},
     '
+    FL='tract:field(GEOID10)'
     ;;
   "US_MA_CENSUS_BLOCK" )
     ADDFIELDS='
-    "add-field":{ "name":"GEOID10-MABLOCK",  "type":"string", "docValues":true},
-    "add-field":{ "name":"REALTOWN",         "type":"string", "docValues":true},
+    "add-field":{ "name":"GEOID10",     "type":"string", "docValues":true, "required":true},
+    "add-field":{ "name":"REALTOWN",    "type":"string", "docValues":true, "required":true},
     '
+    FL='block:field(GEOID10),townName:field(REALTOWN)'
     ;;
    *)
   echo "Unrecognized collection $COLLECTION" >&2
@@ -78,6 +82,7 @@ curl -X POST -H 'Content-type:application/json'  "http://localhost:8983/solr/$CO
     "spatialContextFactory":"JTS",
     "precisionModel":"floating_single",
     "validationRule":"repairBuffer0",
+    "autoIndex":"true",
 
     "geo":true,
     "distanceUnits":"kilometers",
@@ -90,6 +95,14 @@ curl -X POST -H 'Content-type:application/json'  "http://localhost:8983/solr/$CO
 
   "add-dynamic-field":{ "name":"*", "type":"string", "indexed":false, "stored":true, "docValues":false }
 
+}'
+
+curl -X POST -H 'Content-type:application/json'  "http://localhost:8983/solr/$COLLECTION/config" -d '{
+  "add-requesthandler" : {
+    "name": "/hcga_enrich",
+    "class":"solr.SearchHandler",
+    "defaults":{ "fl":"'"$FL"'", "omitHeader":true, "echoParams":"none" }
+  }
 }'
 
 #ERRORS?  To start all over, remove this collection:

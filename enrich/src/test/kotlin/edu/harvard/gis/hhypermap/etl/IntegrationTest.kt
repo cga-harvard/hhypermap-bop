@@ -60,7 +60,8 @@ class IntegrationTest {
     etlConfig.kafkaSourceTopic = "etl-integrationTest-in$kafkaSuffix"
     etlConfig.kafkaDestTopic = "etl-integrationTest-out$kafkaSuffix"
     etlConfig.kafkaStreamsConfig[StreamsConfig.APPLICATION_ID_CONFIG] = "etl-integrationTest-streams$kafkaSuffix"
-    etlConfig.kafkaStreamsConfig[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest" // important
+    etlConfig.kafkaStreamsConfig[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest" // important for test
+    etlConfig.geoAdminSolrConnectionString = "http://geoadmin-solr.kontena.local:8983/solr/"
 
     val defProperties = Properties() // for write & read to Kafka in this test
     for (prop in listOf(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)) {
@@ -74,8 +75,10 @@ class IntegrationTest {
     // Create test data
 
     val inputRecord = jsonStrToTreeNode(
-            """{"id":$createdAt, "created_at":$createdAt, "user_screen_name":"DavidWSmiley",
-"coord_lat":42.3, "coord_lon":-70.0, "text":"I feel happy", "lang":"und"}""")
+            """{"id":${createdAt.toLong()}, "id_str":"$createdAt", "created_at":"${LocalDateTime.now()}",
+"user":{"screen_name":"DavidWSmiley"},
+"coordinates":{"coordinates":[-71.31, 42.65], "type":"Point"},
+"text":"I feel happy", "lang":"und"}""")
     val inputRecords = listOf(KeyValue((inputRecord.get("id") as NumericNode).asLong(), inputRecord))
 
     // Write to Kafka
@@ -117,7 +120,13 @@ class IntegrationTest {
 
     val resultRecord = actualValues[0]
     println(resultRecord)
+
     assertEquals("pos", resultRecord.get("hcga_sentiment")?.asText())
+    //TODO admin2
+    assertEquals("""[{"tract":"25017310100"}]""",
+            resultRecord.get("hcga_geoadmin_us_census_tract").toString())
+    assertEquals("""[{"block":"250173101003000","townName":"Lowell"}]""",
+            resultRecord.get("hcga_geoadmin_us_ma_census_block").toString())
   }
 
   private fun jsonStrToTreeNode(jsonString: String): TreeNode = ObjectMapper().readTree(jsonString)
