@@ -23,9 +23,14 @@ import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer
 import org.apache.solr.client.solrj.impl.CloudSolrClient
 import org.apache.solr.client.solrj.impl.HttpSolrClient
+import org.apache.solr.core.CoreContainer
+import org.apache.solr.core.NodeConfig
+import org.apache.solr.core.SolrResourceLoader
 import org.hibernate.validator.constraints.NotEmpty
 import java.nio.file.Paths
+import java.util.*
 import javax.validation.constraints.NotNull
+import javax.validation.constraints.Pattern
 
 class EtlConfiguration {
 
@@ -37,9 +42,20 @@ class EtlConfiguration {
   @NotEmpty
   var kafkaDestTopic: String? = null
 
-  @JsonProperty("kafkaStreams")
-  @NotNull
-  val kafkaStreamsConfig: MutableMap<String,Any> = mutableMapOf()
+  private var _kafkaStreamsConfig: MutableMap<String,Any> = mutableMapOf()
+  val kafkaStreamsConfig: MutableMap<String,Any>
+    @JsonProperty("kafkaStreams")
+    @NotNull
+    get() {
+      // rewrite hyphens to periods. We do this so we can use sys & env prop overrides without
+      // DropWizard interpreting the '.' as a sub-object
+
+      // It's bad practice to update in a getter... but not sure what's better
+      _kafkaStreamsConfig = _kafkaStreamsConfig.mapKeysTo(
+              LinkedHashMap(_kafkaStreamsConfig.size),
+              { it.key.replace('-', '.') } )
+      return _kafkaStreamsConfig
+    }
 
   @JsonProperty("logging")
   @NotNull
@@ -55,24 +71,35 @@ class EtlConfiguration {
   @JsonProperty("geoAdmin.recompute")
   val geoAdminRecompute = false
 
-  // see setup-Solr.sh where this is duplicated
   var geoAdminCollections = listOf("ADMIN2", "US_CENSUS_TRACT", "US_MA_CENSUS_BLOCK")
 
   @NotEmpty @JsonProperty("geoAdmin.solrConnectionString")
+  @Pattern(regexp = "(http|https|cloud|embedded)://(.+)/")
   var geoAdminSolrConnectionString: String? = null
 
   fun newSolrClient(solrConnectionString: String) : SolrClient {
-    // note: we make the collection required.  Embedded always needs it.
+    // note: we make the collection (at the end) required.  Embedded requires it.
     val match = Regex("""(\w+)://(.+)/([^/]+)""").matchEntire(solrConnectionString)
             ?: throw RuntimeException("solrConnectionString doesn't match pattern")
     val (type, where, coll) = match.destructured
     return when (type) {
       "http", "https" -> HttpSolrClient.Builder(solrConnectionString).build()
       "cloud" -> CloudSolrClient.Builder().withZkHost(where).build().apply { defaultCollection = coll }
-      "embedded" -> EmbeddedSolrServer(Paths.get(where), coll)
+      "embedded" -> {
+        // Instead of simply invoking EmbeddedSolrServer's convenience constructor, we want to avoid
+        //   Solr loading all the cores here -- we just want one.  Arguably ESS should do this.
+        // ignore solr.xml & /lib -- just grab this one core
+        val corePath = Paths.get(where, coll) // assume coll == dir name
+        val resourceLoader = SolrResourceLoader(corePath)
+        val config: NodeConfig = NodeConfig.NodeConfigBuilder(null, resourceLoader).build()
+        val cc = CoreContainer(config)
+        cc.load()
+        EmbeddedSolrServer(cc, coll)
+      }
       else -> throw RuntimeException("Unknown type: $type")
     }
   }
+
 
 
 }

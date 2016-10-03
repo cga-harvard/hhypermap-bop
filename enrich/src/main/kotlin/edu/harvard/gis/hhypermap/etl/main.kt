@@ -33,12 +33,15 @@ import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.KStreamBuilder
 import org.apache.kafka.streams.kstream.ValueMapper
+import org.apache.lucene.document.StoredField
 import org.apache.solr.client.solrj.StreamingResponseCallback
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.params.ModifiableSolrParams
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.*
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 val log = LoggerFactory.getLogger("edu.harvard.gis.hhypermap.etl")!!
 
@@ -95,14 +98,30 @@ fun main(args: Array<String>) {
   CLOSE_HOOKS.add {etlConfig.loggingConfig.stop()}
 
   val kafkaStreams = buildStreams(etlConfig)
+  CLOSE_HOOKS.add {kafkaStreams.close()}
+
+  // when starting all over again (reprocess data), may need to reset local state
+  if (System.getProperty("kafkaStreamsReset", "false").toBoolean()) {
+    log.warn("Asked to run local Kafka Streams 'cleanUp' -- not normal!  " +
+            "note: auto.offset.reset=" + etlConfig.kafkaStreamsConfig["auto.offset.reset"])
+    kafkaStreams.cleanUp()
+  } else if (etlConfig.kafkaStreamsConfig["auto.offset.reset"] == "earliest") {
+    log.warn("detected 'auto.offset.reset'; you should probably set kafkaStreamsReset=true sys prop")
+  }
+
+  val latch = CountDownLatch(1)
+  kafkaStreams.setUncaughtExceptionHandler { thread, throwable ->
+    log.error(throwable.toString(), throwable)
+    thread.interrupt()
+    latch.countDown()
+  }
+
   kafkaStreams.start()
+
   try {
-    val monitor = Object()
-    synchronized(monitor) {
-      monitor.wait()//forever until interrupted
-    }
+    latch.await() // either interruption will finish off, or error triggered latch
   } finally {
-    kafkaStreams.close()
+    CLOSE_HOOKS.runCloseHooks()
   }
 }
 
@@ -138,10 +157,13 @@ fun buildStreams(etlConfig: EtlConfiguration): KafkaStreams {
   val streamsConfig = StreamsConfig(etlConfig.kafkaStreamsConfig)
 
   val enrichers: MutableList<ValueMapper<ObjectNode,ObjectNode>> = mutableListOf()
-  enrichers.add( SentimentEnricher(etlConfig) )
+  etlConfig.sentimentServer?.let {
+    enrichers.add(SentimentEnricher(etlConfig, it))
+  }
   for (col in etlConfig.geoAdminCollections) {
     enrichers.add(GeoAdminEnricher(etlConfig, col))
   }
+  log.info("Enrichers: $enrichers")
 
   return buildStreams(streamsConfig, etlConfig.kafkaSourceTopic!!, etlConfig.kafkaDestTopic!!,
           enrichers)
@@ -170,8 +192,8 @@ fun buildStreams(streamsConfig: StreamsConfig, sourceTopic: String, destTopic: S
 
 val SENTIMENT_KEY = "hcga_sentiment"
 
-class SentimentEnricher(etlConfig: EtlConfiguration) : ValueMapper<ObjectNode,ObjectNode> {
-  val sentimentAnalyzer = SentimentAnalyzer(etlConfig.sentimentServer!!)
+class SentimentEnricher(etlConfig: EtlConfiguration, sentServer: String) : ValueMapper<ObjectNode,ObjectNode> {
+  val sentimentAnalyzer = SentimentAnalyzer(sentServer)
   val shouldRecompute = etlConfig.sentimentRecompute
 
   init {
@@ -193,6 +215,7 @@ class SentimentEnricher(etlConfig: EtlConfiguration) : ValueMapper<ObjectNode,Ob
 
 class GeoAdminEnricher(etlConfig: EtlConfiguration,
                                 coll: String) : ValueMapper<ObjectNode,ObjectNode> {
+  val solrTimer = METRIC_REGISTRY.timer("etl.geoadmin.$coll.solr")!!
   val shouldRecompute = etlConfig.geoAdminRecompute
   val solrClient = etlConfig.newSolrClient(etlConfig.geoAdminSolrConnectionString +coll)
   val jsonKey = "hcga_geoadmin_" + coll.toLowerCase()
@@ -219,7 +242,7 @@ class GeoAdminEnricher(etlConfig: EtlConfiguration,
 
       // do it!
       val jsonResultArray = tweet.putArray(jsonKey)
-      solrClient.queryAndStreamResponse(params, object: StreamingResponseCallback() {
+      val queryResponse = solrClient.queryAndStreamResponse(params, object : StreamingResponseCallback() {
         override fun streamDocListInfo(numFound: Long, start: Long, maxScore: Float?) {
           if (numFound > 50) {
             log.warn("Found high responses: $numFound and we likely dropped some.")
@@ -229,11 +252,21 @@ class GeoAdminEnricher(etlConfig: EtlConfiguration,
         override fun streamSolrDocument(doc: SolrDocument) {
           // add object holding the field=value of the doc (assume string value)
           val obj = jsonResultArray.addObject()
-          for ((f,v) in doc) {
-            obj.put(f, v as String)
+          for ((f, v) in doc) {
+            val strValue: String
+            if (v is StoredField) { // EmbeddedSolrServer
+              strValue = v.stringValue()
+            } else if (v is Number || v is String) {
+              strValue = v.toString()
+            } else {
+              throw RuntimeException("Unexpected type, field=$f class=${v.javaClass} val=$v")
+            }
+            obj.put(f,strValue)
           }
         }
       })
+
+      solrTimer.update(queryResponse.elapsedTime, TimeUnit.MILLISECONDS)
 
     } else {
       log.trace("Sentiment enriching: skipping {}", tweet)

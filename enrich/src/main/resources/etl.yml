@@ -15,11 +15,16 @@ kafkaStreams:
   # If have no offset, consume from "earliest" or "latest"?
   #auto.offset.reset: latest
 
+  #num.stream.threads: 1
+
 sentiment.server: localhost:1234
 
 geoAdmin.solrConnectionString: http://localhost:8983/solr/
 
 logging:
   level: INFO
-  #loggers:
-  #  edu.harvard.gis.hhypermap.etl: DEBUG
+  loggers:
+    #edu.harvard.gis.hhypermap.etl: DEBUG
+    # For EmbeddedSolr
+    org.apache.solr.update: WARN
+    org.apache.solr.core.SolrCore.Request: WARN

@@ -23,19 +23,21 @@ docker-compose docker-compose-integration-test.yml down
 
 docker run -ti confluent/tools kafka-console-consumer --topic etlOut --zookeeper 192.168.100.102:2181 --from-beginning
 
-### Managing Kafka ###
+### Resetting the Stream State ###
 
-docker run --rm -e ZK_HOSTS=192.168.100.102:2181 harvardcga/kafka-manager
+If you want to start processing from the beginning all over again, follow these instructions. 
+Alternatively maybe you should create a new "application-id" if that's fitting.
 
-Then add the cluster
+Background info: http://www.confluent.io/blog/data-reprocessing-with-kafka-streams-resetting-a-streams-application/
 
-### Managing Docker ###
+    docker run --rm -ti confluentinc/cp-kafka kafka-run-class kafka.tools.StreamsResetter \
+        --bootstrap-servers kafka-kafka:9092 --zookeeper kafka-zookeeper:2181 \
+        --application-id enrich_embedded --input-topics GeoTweets1
+    
+    Also, shouldn't need to do this as the stream has no
+    local state as of this writing, but you could set -DkafkaStreamsReset=true to our app
 
-#### top containers ####
-docker stats
-
-#### remove containers that probably aren't needed ####
-docker rm $(docker ps -q -f status=exited)
+Note: https://github.com/confluentinc/cp-docker-images/issues/145 (so we work-around here)
 
 ### Build Docker Image ###
 

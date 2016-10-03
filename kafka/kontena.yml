@@ -4,6 +4,7 @@ name: kafka
 services:
   
   #TODO HA configuration. See https://github.com/confluentinc/cp-docker-images/blob/master/examples/kafka-cluster/docker-compose.yml
+  # NOTE: we're fine with using Docker local image for storage; it shouldn't be much data.
   zookeeper:
     extends:
       file: docker-compose.yml
@@ -13,6 +14,10 @@ services:
       wait_for_port: 2181
     environment:
       ZOOKEEPER_SERVER_ID: 1
+      # Confluent's image uses "KAFKA_JMX_*" even for ZooKeeper
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: ${project}-zookeeper.kontena.local
+
       
   #TODO HA configuration. See https://github.com/confluentinc/cp-docker-images/blob/master/examples/kafka-cluster/docker-compose.yml
   kafka:
@@ -29,7 +34,9 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: ${project}-zookeeper.kontena.local:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${HOSTNAME}:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${project}-kafka.kontena.local:9092
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: ${project}-kafka.kontena.local
       
   kafka-manager:
     image: harvardcga/kafka-manager
@@ -50,6 +57,8 @@ services:
       KONTENA_LB_KEEP_VIRTUAL_PATH: true
       KM_HTTP_CONTEXT: /kafka-manager
       KM_USERNAME: "admin"
+    deploy:
+      wait_for_port: 9000
     secrets:
       - secret: KAFKA_MANAGER_PASSWORD
         name: KM_PASSWORD
