@@ -12,6 +12,8 @@ kafkaStreams:
   # ZooKeeper
   zookeeper.connect: localhost:2181
 
+  compression.type: lz4
+
   # If have no offset, consume from "earliest" or "latest"?
   #auto.offset.reset: latest
 
