@@ -64,9 +64,13 @@ class EtlConfiguration {
   @JsonProperty("sentiment.recompute")
   var sentimentRecompute = false
 
-  @JsonProperty("sentiment.server")
-  @NotEmpty
-  var sentimentServer: String? = null
+  private var _sentimentServer: String? = null
+  var sentimentServer: String?
+    @JsonProperty("sentiment.server")
+    get() = _sentimentServer
+    set(value) {
+      _sentimentServer = if (value == "") null else value
+    }
 
   @JsonProperty("geoAdmin.recompute")
   val geoAdminRecompute = false
