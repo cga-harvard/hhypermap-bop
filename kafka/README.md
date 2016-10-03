@@ -10,6 +10,18 @@ Kafka size:
 
     kontena container exec kafka-kafka-1 du -sh '/var/lib/kafka/data/*'
 
+Copy topic from one to another:
+
+    #reset if ran before
+    docker run --rm -ti confluentinc/cp-kafka kafka-consumer-groups \
+            --zookeeper kafka-zookeeper:2181 \
+            --delete --group replay-log-producer
+    # do it
+    docker run --rm -ti -e KAFKA_HEAP_OPTS=-Xmx800M confluentinc/cp-kafka kafka-run-class kafka.tools.ReplayLogProducer \
+             --broker-list kafka-kafka:9092 --zookeeper kafka-zookeeper:2181 \
+             --inputtopic smileTemp --outputtopic smileLz4 \
+             --property compression.type=lz4
+
 ZooKeeper
 =========
 
