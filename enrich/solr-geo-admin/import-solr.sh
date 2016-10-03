@@ -14,7 +14,7 @@ COLLECTION="$1"
 # Use rowid to create a synthetic ID. Note: we assume the target collection is either empty or has
 # an identical (or smaller) set of IDs.
 #for COLLECTION in "ADMIN2" "US_CENSUS_TRACT" "US_MA_CENSUS_BLOCK"; do
-  curl -X POST "http://localhost:8983/solr/$COLLECTION/update/csv?optimize=true&rowid=id" \
+  curl -s -X POST "http://localhost:8983/solr/$COLLECTION/update/csv?optimize=true&rowid=id" \
     --data-binary "@$DATA_DIR/$COLLECTION.csv" -H 'Content-type:application/csv'
 #done
 
