@@ -73,6 +73,7 @@ object CLOSE_HOOKS {
           log.error(e.toString(), e)
         }
       }
+      println("Shut down cleanly.")
     }
   }
 
@@ -88,14 +89,15 @@ fun main(args: Array<String>) {
 
   BootstrapLogging.bootstrap()
 
+  val etlConfig = buildConfig(configFile)
+
+  //configure logging as soon as we can
+  etlConfig.loggingConfig.configure(METRIC_REGISTRY, "etl")
+  CLOSE_HOOKS.add {etlConfig.loggingConfig.stop()}
+
   val jmxReporter = JmxReporter.forRegistry(METRIC_REGISTRY).build()
   jmxReporter.start()
   CLOSE_HOOKS.add {jmxReporter.stop()}
-
-  val etlConfig = buildConfig(configFile)
-
-  etlConfig.loggingConfig.configure(METRIC_REGISTRY, "etl")
-  CLOSE_HOOKS.add {etlConfig.loggingConfig.stop()}
 
   val kafkaStreams = buildStreams(etlConfig)
   CLOSE_HOOKS.add {kafkaStreams.close()}
