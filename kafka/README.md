@@ -2,6 +2,10 @@
 Tips & Tricks
 =============
 
+When running "docker-compose up", stopping, and doing again, you may find
+on subsequent tries it's confused about previous state and Kafka fails to
+start. You may have to "docker-compose rm" 
+
 Use the "Kafka Manager" (by Yahoo!):
 
     http://kafka-kafka-manager:9000/kafka-manager/

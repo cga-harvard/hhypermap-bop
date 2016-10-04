@@ -3,7 +3,9 @@ version: '2'
 services:
   
   # note: only need to open ports if wish to communicate with either from *outside* the docker engine.
-  
+
+  #  ${HOST_IP} should be an IP or name of of the actual host, and NOT 127.0.0.1
+
   zookeeper:
     image: confluentinc/cp-zookeeper:3.0.1
     ports:
@@ -25,5 +27,4 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      #  ${HOSTNAME} should be an IP or name resolveable by clients communicating with Kafka. And NOT 127.0.0.1 
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${HOSTNAME}:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${HOST_IP}:9092
