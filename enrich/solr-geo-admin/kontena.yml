@@ -16,5 +16,10 @@ services:
       - /media/attached/solr-geo-admin-home:/var/solrhome
     deploy:
       wait_for_port: 8983
+#    hooks:
+#      post_start:
+#        - name: disable request logging
+#          cmd: curl -s http://localhost:8983/solr/admin/info/logging --data-binary "set=org.apache.solr.core.SolrCore.Request:WARN&wt=json"
+#          instances: *
     affinity:
       - node==enrich1.novalocal

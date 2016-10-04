@@ -1,0 +1,42 @@
+---
+version: '2'
+services:
+
+  enrich:
+    build: .
+    image: harvardcga/tweet-enrich
+    environment:
+      dw.kafkaSourceTopic: tweets
+      dw.kafkaDestTopic: tweets-enriched
+      # use a hyphen for keys beneath "kafkaStreams"
+      dw.kafkaStreams.application-id: enrich
+      dw.kafkaStreams.bootstrap-servers: ${HOST_IP}:9092
+      dw.kafkaStreams.zookeeper-connect: ${HOST_IP}:2181
+      dw.sentiment.server: sent-server:1234
+      dw.geoAdmin.solrConnectionString: http://${HOST_IP}:8983/solr/
+      #    or embedded://pathToSolrHome/   or cloud://zkHostList/zkChroot/
+      # further defaults assume Kafka & Zookeeper are running locally
+    depends_on:
+      - sent-server
+
+  sent-server:
+    build: ./sentiment-server
+    image: harvardcga/sentiment-server
+#    ports:
+#      - 1234:1234
+    volumes:
+      - classifier-data:/var/classifier/:ro
+
+
+  #solr-geo-admin: remember to run this separately (unless enrich is configured to embed it).
+  #  It's setup is complicated and has tons of data, so it's not listed here.
+  # e.g. docker run --name solr-geo-admin --rm -p 8983:8983 -e SOLR_HEAP=712M -e SOLR_HOME=/var/solrhome -v /localPathToSolr:/var/solrhome harvardcga/solr
+
+
+  #kafka: remember to run this separately
+
+volumes:
+
+  # See README.md -- this is for local useage (not production)
+  classifier-data:
+    external: true

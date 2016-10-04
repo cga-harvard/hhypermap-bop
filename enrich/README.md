@@ -32,7 +32,7 @@ Background info: http://www.confluent.io/blog/data-reprocessing-with-kafka-strea
 
     docker run --rm -ti confluentinc/cp-kafka kafka-run-class kafka.tools.StreamsResetter \
         --bootstrap-servers kafka-kafka:9092 --zookeeper kafka-zookeeper:2181 \
-        --application-id enrich_embedded --input-topics GeoTweets1
+        --application-id enrich --input-topics tweets
     
     Also, shouldn't need to do this as the stream has no
     local state as of this writing, but you could set -DkafkaStreamsReset=true to our app
@@ -41,4 +41,15 @@ Note: https://github.com/confluentinc/cp-docker-images/issues/145 (so we work-ar
 
 ### Build Docker Image ###
 
-mvn package -DskipTests docker:build
+    # note: Kontena will first invoke maven build, then docker compose build
+    kontena app build
+    
+    # push (upload) images to the registry:
+    docker-compose push
+
+### Docker Compose ###
+
+Prerequisites: Kafka running, "solr-geo-admin" running.
+    
+    export HOST_IP=192.168.0.25  #OR WHATEVER YOUR IP IS; NOT 127.0.0.1
+    docker up --abort-on-container-exit

@@ -91,6 +91,12 @@
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-core</artifactId>
       <version>${solr.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.vividsolutions</groupId>
@@ -120,33 +126,16 @@
         <artifactId>kotlin-maven-plugin</artifactId>
       </plugin>
 
-      <!-- note: this plugin doesn't support docker-compose, so we do integration-testing
-       semi-manually instead of doing a verbose equivalent in something this understands. -->
       <plugin>
-        <groupId>io.fabric8</groupId>
-        <artifactId>docker-maven-plugin</artifactId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <!-- for use with docker -->
         <configuration>
-          <images>
-            <image>
-              <name>harvardcga/${project.artifactId}</name>
-              <build>
-                <from>java:openjdk-8-jre-alpine</from>
-                <entryPoint>
-                  <!-- TODO ? -XX:+UseSerialGC -->
-                  <exec>
-                    <arg>java</arg>
-                    <arg>-Xmx256M</arg>
-                    <arg>-cp</arg>
-                    <arg>maven/*</arg>
-                    <arg>${mainClass}</arg>
-                  </exec>
-                </entryPoint>
-                <assembly>
-                  <descriptorRef>artifact-with-dependencies</descriptorRef>
-                </assembly>
-              </build>
-            </image>
-          </images>
+          <finalName>libs</finalName>
+          <appendAssemblyId>false</appendAssemblyId>
+          <attach>false</attach>
+          <descriptors>
+            <descriptor>src/assembly/libs-runtime.xml</descriptor>
+          </descriptors>
         </configuration>
       </plugin>
 
