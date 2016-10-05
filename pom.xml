@@ -25,7 +25,7 @@
   </developers>
 
   <modules>
-    <module>bop-ws</module>
+    <module>bop/webservice</module>
     <module>enrich</module>
   </modules>
 

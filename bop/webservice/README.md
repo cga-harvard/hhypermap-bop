@@ -42,12 +42,7 @@ If you wish to use another configuration file altogether, add this option to doc
 IMPORTANT: Of course this web-service needs to reach Solr, and by default
 it expects it at localhost:8983.  That will very likely need to be
 changed, since the docker image doesn't contain Solr (a bad idea).
-
-Mac/Windows hosts note:  Docker for Mac & Windows uses Virtualbox
-behind the scenes, which is the true docker host / engine.  Lets say you
-are running Solr locally (not in docker) on 'localhost:8983'.  That is 
-not reachable as-such from within a docker container.  Instead, use
-the IP address of your host machine.
+You might need to supply the real IP or hostname of your machine.
 
 
 TODO
