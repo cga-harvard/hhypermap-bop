@@ -5,7 +5,7 @@ Prerequisites: Java 8, Maven.
 
 This builds, skipping tests, and produces jar files in target/.
 
-    $ mvn package -DskipTests
+    $ mvn -DskipTests clean verify assembly:assembly
 
 Tests currently require Solr is already running with a bop-tests
 collections. TODO automate that setup better.
@@ -17,11 +17,11 @@ Prerequisites: Docker. And you must have built the 'jar' above.
 
 Build an 'image' like so:
 
-    $ docker build -t dwsmiley/hcga/bop-ws .
+    $ docker build -t harvardcga/bop-webservice .
     
 To run it (in the foreground):
     
-    $ docker run --name bop-ws -p 8080:8080 --rm dwsmiley/hcga/bop-ws
+    $ docker run --name bop-ws -p 8080:8080 --rm harvardcga/bop-webservice
     
 Then point your browser at:
 http://localhost:8080/bopws/swagger
@@ -47,12 +47,6 @@ You might need to supply the real IP or hostname of your machine.
 
 TODO
 ====
-
-The shaded jar is ~21MB. Perhaps we should produce an assembly with the
-dependencies in their own directory, and with Dockerfile instructions that
-result in a cached image that does *not* have the main jar.  That would
-get a lot of cache hits for incremental improvement builds.  The jar
-would be added in a separate instruction (and thus separate image layer).
 
 Consider doing a DW "healthcheck" immediately on boot, thus failing
 if Solr isn't up?

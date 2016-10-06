@@ -4,7 +4,7 @@ Start Solr in SolrCloud mode.
 We use this directory here as the "solr home" only to keep the state local
 to this project and not intermingled with other possible Solr projects.
   
-    docker run --rm --name bop-solr -v "$(pwd)/bop-solrhome/:/opt/solr/server/solr" -p 8983:8983 harvardcga/solr -c
+    docker run --rm --name bop-solr -v "$(pwd)/solrhome/:/opt/solr/server/solr" -p 8983:8983 harvardcga/solr -c
 
 Explicitly upload a config set (also to update it when it changes)
 
@@ -19,6 +19,8 @@ Reload a collection using this config (obviously only after it's there)
 Create the "bop" collection WITHOUT time sharding (purely for testing).
 
   docker exec -ti bop-solr solr create_collection -c bop -n bop
+  # Kontena alternate instructions:
+  kontena container exec bop-solr-1 solr create_collection -c bop -n bop
   
 Add an alias, "tweets"
 

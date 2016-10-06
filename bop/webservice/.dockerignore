@@ -1,4 +1,6 @@
 src/test/kotlin
 !Dockerfile
-!target/bop-ws-shaded.jar
+!target/classes/
+!target/*.jar
+!target/libs/
 !bop-ws.yml

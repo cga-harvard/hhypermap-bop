@@ -1,0 +1,56 @@
+---
+version: '2'
+name: bop
+services:
+
+  solr:
+    image: harvardcga/solr
+    # SolrCloud mode. Embedded Zookeeper, for now.
+    command: -c
+    environment:
+      SOLR_HEAP: 4G
+      SOLR_HOST: ${project}-solr-1
+      # NOTE: JMX port is 18983
+      ENABLE_REMOTE_JMX_OPTS: true
+
+    deploy:
+      wait_for_port: 8983
+    stateful: true
+    affinity:
+      - node==bop-solr1.novalocal
+
+  webservice:
+    image: harvardcga/bop-webservice
+    build: ./webservice
+    hooks:
+      pre_build:
+        - name: maven
+          cmd: cd webservice && mvn -DskipTests clean validate assembly:assembly
+    ports:
+      - 8080:8080
+    depends_on:
+      - solr
+    external_links:
+      - lb-pub-loadbalancer
+    environment:
+      #dw.logging.level: DEBUG
+      SOLR_HOST: ${project}-solr
+      SOLR_PORT: 8983
+      JMX:
+       -Dcom.sun.management.jmxremote=true
+       -Dcom.sun.management.jmxremote.authenticate=false
+       -Dcom.sun.management.jmxremote.ssl=false
+       -Djava.rmi.server.hostname=${project}-webservice.kontena.local
+       -Dcom.sun.management.jmxremote.local.only=false
+       -Dcom.sun.management.jmxremote.rmi.port=9999
+       -Dcom.sun.management.jmxremote.port=9999
+       -Dcom.sun.management.jmxremote.port=9999
+      dw.server.applicationContextPath: /bopws
+      KONTENA_LB_INTERNAL_PORT: 8080
+      KONTENA_LB_VIRTUAL_PATH: /bopws
+      KONTENA_LB_KEEP_VIRTUAL_PATH: true
+    deploy:
+      wait_for_port: 8080
+
+  #TODO ingest
+  # affinity to solr-1?

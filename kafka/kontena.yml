@@ -34,7 +34,7 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: ${project}-zookeeper.kontena.local:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${project}-kafka.kontena.local:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${project}-kafka-1.kontena.local:9092
       KAFKA_DELETE_TOPIC_ENABLE: true
       KAFKA_JMX_PORT: 9999
       KAFKA_JMX_HOSTNAME: ${project}-kafka.kontena.local
