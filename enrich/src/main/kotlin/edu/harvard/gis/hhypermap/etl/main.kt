@@ -230,12 +230,12 @@ class GeoAdminEnricher(etlConfig: EtlConfiguration,
       log.trace("Geo Admin {} enriching: processing {}", jsonKey, tweet)
       val coordLonLatArray = tweet.get("coordinates")?.get("coordinates") as ArrayNode?
               ?: throw RuntimeException("Expected coordinates/coordinates in this data")
-      val lon = coordLonLatArray.get(0).asDouble()!!
-      val lat = coordLonLatArray.get(1).asDouble()!!
+      val lon = coordLonLatArray.get(0).asDouble()
+      val lat = coordLonLatArray.get(1).asDouble()
 
       val params = ModifiableSolrParams()
       params.set("qt", "/hcga_enrich") // sets 'fl'
-      params.set("q", "{!cache=false field f=WKT}Intersects(POINT($lon $lat))")
+      params.set("q", "{!field cache=false f=WKT}Intersects(POINT($lon $lat))") // x y order for WKT
       params.set("rows", 50) // if we reach 50, that'd be very unexpected
       //TODO sort somehow?  put that in request handler
 
