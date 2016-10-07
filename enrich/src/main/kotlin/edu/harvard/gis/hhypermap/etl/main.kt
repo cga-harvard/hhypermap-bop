@@ -39,9 +39,12 @@ import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.params.ModifiableSolrParams
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.lang.management.ManagementFactory
+import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import javax.management.*
 
 val log = LoggerFactory.getLogger("edu.harvard.gis.hhypermap.etl")!!
 
@@ -95,6 +98,8 @@ fun main(args: Array<String>) {
   etlConfig.loggingConfig.configure(METRIC_REGISTRY, "etl")
   CLOSE_HOOKS.add {etlConfig.loggingConfig.stop()}
 
+  exposeFileAsJmx(log.name+".GIT", "/git.properties")
+
   val jmxReporter = JmxReporter.forRegistry(METRIC_REGISTRY).build()
   jmxReporter.start()
   CLOSE_HOOKS.add {jmxReporter.stop()}
@@ -125,6 +130,21 @@ fun main(args: Array<String>) {
   } finally {
     CLOSE_HOOKS.runCloseHooks()
   }
+}
+
+fun exposeFileAsJmx(jmxName: String, rsrcPath: String) {
+  val mbean = object : StandardMBean(TextMBean::class.java, false), TextMBean {
+    override val text: String
+      get() =
+        EtlConfiguration::class.java.getResourceAsStream(rsrcPath)
+                .reader(StandardCharsets.ISO_8859_1).readText()
+  }
+  ManagementFactory.getPlatformMBeanServer()
+          .registerMBean(mbean, ObjectName(jmxName+":type=Text"))
+}
+
+interface TextMBean {
+  val text: String
 }
 
 fun buildConfig(configFile: File? = null): EtlConfiguration {
