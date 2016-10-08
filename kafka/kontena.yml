@@ -16,7 +16,7 @@ services:
       ZOOKEEPER_SERVER_ID: 1
       # Confluent's image uses "KAFKA_JMX_*" even for ZooKeeper
       KAFKA_JMX_PORT: 9999
-      KAFKA_JMX_HOSTNAME: ${project}-zookeeper.kontena.local
+      KAFKA_JMX_HOSTNAME: ${project}-zookeeper-1.kontena.local
 
       
   #TODO HA configuration. See https://github.com/confluentinc/cp-docker-images/blob/master/examples/kafka-cluster/docker-compose.yml
@@ -37,7 +37,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${project}-kafka-1.kontena.local:9092
       KAFKA_DELETE_TOPIC_ENABLE: true
       KAFKA_JMX_PORT: 9999
-      KAFKA_JMX_HOSTNAME: ${project}-kafka.kontena.local
+      KAFKA_JMX_HOSTNAME: ${project}-kafka-1.kontena.local
       
   kafka-manager:
     image: harvardcga/kafka-manager

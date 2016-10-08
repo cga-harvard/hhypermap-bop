@@ -19,7 +19,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>edu.harvard.gis.hhypermap</groupId>
+    <groupId>edu.harvard.gis.hhypermap.bop</groupId>
     <artifactId>bop-parent-pom</artifactId>
     <version>1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
@@ -34,56 +34,14 @@
   <description>ETL Kafka to Kafka, enriching each item</description>
 
   <properties>
-    <mainClass>edu.harvard.gis.hhypermap.etl.MainKt</mainClass>
+    <mainClass>edu.harvard.gis.hhypermap.bop.enrich.Enrich</mainClass>
   </properties>
 
   <dependencies>
-    <!-- DropWizard stuff (just for configuration)-->
     <dependency>
-      <groupId>io.dropwizard</groupId>
-      <artifactId>dropwizard-configuration</artifactId>
-      <version>${dropwizard.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.dropwizard</groupId>
-      <artifactId>dropwizard-logging</artifactId>
-      <version>${dropwizard.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.dropwizard.metrics</groupId>
-      <artifactId>metrics-core</artifactId>
-      <version>3.1.2</version>
-    </dependency>
-    <!-- note: we want SLF4J + Logback for logging, which is transitively included by
-    DropWizard logging.  We don't want Log4j, we we annoyingly have to exclude from various
-    Kafka related dependencies. -->
-
-    <!-- Kafka for streaming framework and getting data in and out -->
-    <dependency>
-      <groupId>org.apache.kafka</groupId>
-      <artifactId>kafka-clients</artifactId>
-      <version>${kafka.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.kafka</groupId>
-      <artifactId>kafka-streams</artifactId>
-      <version>${kafka.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.msgpack</groupId>
-      <artifactId>jackson-dataformat-msgpack</artifactId>
-      <version>0.8.10</version>
+      <groupId>edu.harvard.gis.hhypermap.bop</groupId>
+      <artifactId>kafka-streams-base</artifactId>
+      <version>1.0-SNAPSHOT</version>
     </dependency>
 
     <!-- Solr Core for EmbeddedSolrServer (but brings in a ton of deps) -->
@@ -103,13 +61,6 @@
       <artifactId>jts-core</artifactId>
       <version>1.14.0</version>
       <scope>runtime</scope>
-    </dependency>
-
-    <!-- avoid dependency version conflict by explicitly declaring -->
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>19.0</version>
     </dependency>
 
   </dependencies>

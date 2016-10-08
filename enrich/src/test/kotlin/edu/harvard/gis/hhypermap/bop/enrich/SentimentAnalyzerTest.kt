@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package edu.harvard.gis.hhypermap.etl
+package edu.harvard.gis.hhypermap.bop.enrich
 
 import org.junit.Assert.*
 import org.junit.Test

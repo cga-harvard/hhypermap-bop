@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>edu.harvard.gis.hhypermap</groupId>
+    <groupId>edu.harvard.gis.hhypermap.bop</groupId>
     <artifactId>bop-parent-pom</artifactId>
     <version>1.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>

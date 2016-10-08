@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package edu.harvard.gis.hhypermap.etl
+package edu.harvard.gis.hhypermap.bop.enrich
 
 import com.fasterxml.jackson.core.TreeNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.NumericNode
 import com.fasterxml.jackson.databind.node.ObjectNode
+import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.JsonSerde
 import io.confluent.examples.streams.IntegrationTestUtils
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -31,6 +32,7 @@ import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.StreamsConfig
 import org.junit.After
 import org.junit.Test
+import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -56,16 +58,23 @@ class IntegrationTest {
     //  then set the suffix to something unique per run.
     val kafkaSuffix = "-$createdAt"
 
-    val etlConfig = buildConfig(configFile = null)
-    etlConfig.kafkaSourceTopic = "etl-integrationTest-in$kafkaSuffix"
-    etlConfig.kafkaDestTopic = "etl-integrationTest-out$kafkaSuffix"
-    etlConfig.kafkaStreamsConfig[StreamsConfig.APPLICATION_ID_CONFIG] = "etl-integrationTest-streams$kafkaSuffix"
-    etlConfig.kafkaStreamsConfig[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest" // important for test
-    etlConfig.geoAdminSolrConnectionString = "http://geoadmin-solr.kontena.local:8983/solr/"
+    val enrich = object : Enrich(arrayOf<String>()) {
+      override fun buildConfig(configFile: File?, cClazz: Class<EnrichDwConfiguration>): EnrichDwConfiguration {
+        val dwConfig = super.buildConfig(configFile, cClazz)
+        // over-write the config...
+        dwConfig.kafkaSourceTopic = "etl-integrationTest-in$kafkaSuffix"
+        dwConfig.kafkaDestTopic = "etl-integrationTest-out$kafkaSuffix"
+        dwConfig.kafkaStreamsConfig[StreamsConfig.APPLICATION_ID_CONFIG] = "etl-integrationTest-streams$kafkaSuffix"
+        dwConfig.kafkaStreamsConfig[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest" // important for test
+        dwConfig.sentimentServer = dwConfig.sentimentServer!!.replace("localhost", "enrich-sent-server.kontena.local")
+        dwConfig.geoAdminSolrConnectionString = "http://geoadmin-solr.kontena.local:8983/solr/"
+        return dwConfig
+      }
+    }
 
     val defProperties = Properties() // for write & read to Kafka in this test
     for (prop in listOf(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)) {
-      defProperties[prop] = etlConfig.kafkaStreamsConfig[prop]
+      defProperties[prop] = enrich.dwConfig.kafkaStreamsConfig[prop]
     }
 
     println("--")
@@ -88,14 +97,14 @@ class IntegrationTest {
     producerConfig.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer::class.java)
     producerConfig.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerde.JsonSerializer::class.java)
 
-    IntegrationTestUtils.produceKeyValuesSynchronously(etlConfig.kafkaSourceTopic!!,
+    IntegrationTestUtils.produceKeyValuesSynchronously(enrich.dwConfig.kafkaSourceTopic!!,
             inputRecords, producerConfig)
 
     println("--")
     println("-- Streams Start, ETL/Enrich")
     println("--")
 
-    kafkaStreams = buildStreams(etlConfig)
+    kafkaStreams = enrich.kafkaStreams
     // note: Kafka Streams requires the source topic(s) to exist already, otherwise you get an
     //  exception.
     kafkaStreams!!.start() // note:we close in @After
@@ -114,7 +123,7 @@ class IntegrationTest {
 
     val actualValues: List<ObjectNode> =
             IntegrationTestUtils.waitUntilMinValuesRecordsReceived(consumerConfig,
-              etlConfig.kafkaDestTopic!!, inputRecords.size)
+              enrich.dwConfig.kafkaDestTopic!!, inputRecords.size)
 
     kafkaStreams!!.close()
 

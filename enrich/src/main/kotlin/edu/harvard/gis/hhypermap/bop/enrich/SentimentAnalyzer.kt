@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package edu.harvard.gis.hhypermap.etl
+package edu.harvard.gis.hhypermap.bop.enrich
 
+import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.StreamBase
+import org.slf4j.LoggerFactory
 import java.io.*
 import java.net.Socket
 
@@ -25,6 +27,8 @@ import java.net.Socket
  */
 class SentimentAnalyzer (hostColonPort: String) : Closeable {
 
+  private val log = LoggerFactory.getLogger(this.javaClass)
+
   // todo use a pool of these things so we can be re-entrant, assuming the Kafka Streams
   //   can process us in more than one thread
 
@@ -32,7 +36,7 @@ class SentimentAnalyzer (hostColonPort: String) : Closeable {
   private val writer: PrintWriter
   private val reader: BufferedReader
 
-  private val timer = METRIC_REGISTRY.timer("etl.calcSentiment")!!
+  private val timer = StreamBase.METRIC_REGISTRY.timer("enrich.calcSentiment")!!
 
   init {
     // Connect to the sentiment server and wait until READY is read

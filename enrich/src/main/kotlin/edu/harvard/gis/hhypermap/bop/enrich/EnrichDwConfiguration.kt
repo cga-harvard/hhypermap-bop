@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package edu.harvard.gis.hhypermap.etl
+package edu.harvard.gis.hhypermap.bop.enrich
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwStreamsConfiguration
 import io.dropwizard.logging.DefaultLoggingFactory
 import io.dropwizard.logging.LoggingFactory
 import org.apache.solr.client.solrj.SolrClient
@@ -32,7 +33,7 @@ import java.util.*
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Pattern
 
-class EtlConfiguration {
+class EnrichDwConfiguration : DwStreamsConfiguration() {
 
   @JsonProperty
   @NotEmpty
@@ -41,25 +42,6 @@ class EtlConfiguration {
   @JsonProperty
   @NotEmpty
   var kafkaDestTopic: String? = null
-
-  private var _kafkaStreamsConfig: MutableMap<String,Any> = mutableMapOf()
-  val kafkaStreamsConfig: MutableMap<String,Any>
-    @JsonProperty("kafkaStreams")
-    @NotNull
-    get() {
-      // rewrite hyphens to periods. We do this so we can use sys & env prop overrides without
-      // DropWizard interpreting the '.' as a sub-object
-
-      // It's bad practice to update in a getter... but not sure what's better
-      _kafkaStreamsConfig = _kafkaStreamsConfig.mapKeysTo(
-              LinkedHashMap(_kafkaStreamsConfig.size),
-              { it.key.replace('-', '.') } )
-      return _kafkaStreamsConfig
-    }
-
-  @JsonProperty("logging")
-  @NotNull
-  val loggingConfig: LoggingFactory = DefaultLoggingFactory()
 
   @JsonProperty("sentiment.recompute")
   var sentimentRecompute = false

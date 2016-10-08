@@ -11,4 +11,4 @@ COPY target/classes/ classes/
 ENV JAVA_JMX=\
     JAVA_OPTS=
 
-ENTRYPOINT exec java $JMX $JAVA_OPTS -cp 'classes/:libs/*' edu.harvard.gis.hhypermap.etl.MainKt
+ENTRYPOINT exec java $JMX $JAVA_OPTS -cp 'classes/:libs/*' edu.harvard.gis.hhypermap.bop.enrich.Enrich

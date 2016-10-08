@@ -30,7 +30,8 @@ services:
     volumes:
       - /media/attached/solr-geo-admin-home:/var/solrhome:ro
     affinity:
-      - label==enrich
+       - service==sent-server
+      #- label==enrich
 
   sent-server:
     extends:
@@ -40,7 +41,8 @@ services:
       - /media/attached/classifier-data:/var/classifier/:ro
     # don't wait-for port; the python app isn't graceful about it
     affinity:
-      - service==enrich
+      # - service==enrich
+      - label==enrich
 
   # no solr-geo-admin service here... we embed Solr instead for performance
 
