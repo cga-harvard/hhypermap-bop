@@ -66,8 +66,13 @@
      which is consistent with timestamp order for tweets. -->
   <field name="created_at" type="date_range_field" indexed="true" stored="true" docValues="false"/>
 
+  <field name="minuteOfDayByUserTimeZone" type="int" indexed="true" stored="true" docValues="true" />
+
   <!-- twitter user screen name. -->
   <field name="user_name" type="string"    indexed="true" stored="true" docValues="true"/>
+
+  <!-- TODO (lang specific search?)-->
+  <field name="lang" type="string" indexed="true" stored="true" docValues="true" />
 
   <!-- for storing (retrieval) lat,lon & sort-by-distance, but not search.
   Note: _coordinate has docValues but not this aggregate -->
@@ -77,15 +82,23 @@
 
   <!-- we use spatial RPT for filtering and for heatmaps -->
   <!--    TODO project this into web-mercator, use quad tree (square cells) -->
-  <!--    TODO use FlexPrefixTree (planned) -->
   <field name="coord_rpt" type="geo_rpt_5m"         indexed="true" stored="false"/>
   <copyField source="coord" dest="coord_rpt" />
 
-  <!-- TODO geo path -->
+  <field name="geoadmin_admin2" type="hierarchy" indexed="true" stored="true" docValues="false" />
+  <field name="geoadmin_admin2_txt" type="hierarchy" indexed="true" stored="true" docValues="false" />
 
-  <!-- TODO sentiment -->
+  <field name="geoadmin_us_census_tract" type="string" indexed="true" stored="true" docValues="true" />
 
-  <!-- TODO lang (incl lang specific search?)-->
+  <field name="geoadmin_us_ma_census_block" type="string" indexed="true" stored="true" docValues="true" />
+  <field name="geoadmin_us_ma_census_block_townName" type="string" indexed="true" stored="true" docValues="true" />
+
+  <dynamicField name="*_count"  type="int" indexed="true"  stored="true" docValues="true" />
+  <!-- geoadmin path DV fields -->
+  <dynamicField name="*_pathdv" type="string" indexed="false"  stored="false" docValues="true" />
+
+
+  <field name="sentiment_pos" type="boolean" />
 
   <!-- TODO plenty of other interesting metadata in tweets. Add hashtags, in-reply-to, etc. -->
 
@@ -356,5 +369,29 @@
              geo="false" worldBounds="ENVELOPE(-180, 180, 180, -180)" prefixTree="packedQuad"
              distErrPct="0.025" maxDistErr="0.000045" distanceUnits="degrees" />
 
+  <fieldType name="hierarchy"  class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.PathHierarchyTokenizerFactory" />
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.KeywordTokenizerFactory" />
+    </analyzer>
+  </fieldType>
+
+  <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
+  <dynamicField name="*_is" type="int"    indexed="true"  stored="true"  multiValued="true"/>
+  <dynamicField name="*_s"  type="string"  indexed="true"  stored="true" />
+  <dynamicField name="*_ss" type="string"  indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_l"  type="long"   indexed="true"  stored="true"/>
+  <dynamicField name="*_ls" type="long"   indexed="true"  stored="true"  multiValued="true"/>
+  <dynamicField name="*_t"  type="text_general"    indexed="true"  stored="true"/>
+  <dynamicField name="*_txt" type="text_general"   indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_en"  type="text_en"    indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_b"  type="boolean" indexed="true" stored="true"/>
+  <dynamicField name="*_bs" type="boolean" indexed="true" stored="true"  multiValued="true"/>
+  <dynamicField name="*_f"  type="float"  indexed="true"  stored="true"/>
+  <dynamicField name="*_fs" type="float"  indexed="true"  stored="true"  multiValued="true"/>
+  <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
+  <dynamicField name="*_ds" type="double" indexed="true"  stored="true"  multiValued="true"/>
 
 </schema>
