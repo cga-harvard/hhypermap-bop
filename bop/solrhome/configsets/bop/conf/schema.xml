@@ -65,8 +65,11 @@
   <!-- use DateRangeField for faster date range search/faceting. To sort, sort by 'id' instead
      which is consistent with timestamp order for tweets. -->
   <field name="created_at" type="date_range_field" indexed="true" stored="true" docValues="false"/>
+  <field name="created_at_dv" type="date" indexed="false" stored="false" docValues="true" useDocValuesAsStored="false" />
+  <copyField source="created_at" dest="created_at_dv" />
 
-  <field name="minuteOfDayByUserTimeZone" type="int" indexed="true" stored="true" docValues="true" />
+
+  <field name="minuteOfDayByUserTimeZone" type="int" indexed="true" stored="false" docValues="true" />
 
   <!-- twitter user screen name. -->
   <field name="user_name" type="string"    indexed="true" stored="true" docValues="true"/>
@@ -93,7 +96,7 @@
   <field name="geoadmin_us_ma_census_block" type="string" indexed="true" stored="true" docValues="true" />
   <field name="geoadmin_us_ma_census_block_townName" type="string" indexed="true" stored="true" docValues="true" />
 
-  <dynamicField name="*_count"  type="int" indexed="true"  stored="true" docValues="true" />
+  <dynamicField name="*_count"  type="int" indexed="true"  stored="false" docValues="true" />
   <!-- geoadmin path DV fields -->
   <dynamicField name="*_pathdv" type="string" indexed="false"  stored="false" docValues="true" />
 
@@ -369,7 +372,7 @@
              geo="false" worldBounds="ENVELOPE(-180, 180, 180, -180)" prefixTree="packedQuad"
              distErrPct="0.025" maxDistErr="0.000045" distanceUnits="degrees" />
 
-  <fieldType name="hierarchy"  class="solr.TextField">
+  <fieldType name="hierarchy"  class="solr.TextField" omitNorms="true">
     <analyzer type="index">
       <tokenizer class="solr.PathHierarchyTokenizerFactory" />
     </analyzer>
