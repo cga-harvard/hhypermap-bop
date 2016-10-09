@@ -1,0 +1,6 @@
+#instead of black-listing, we white-list what we need
+**/*
+!Dockerfile
+!target/classes/
+!target/*.jar
+!target/libs/

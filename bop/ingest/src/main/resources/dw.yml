@@ -1,0 +1,27 @@
+kafkaSourceTopic: tweets-enriched
+
+solrConnectionString: http://localhost:8983/solr/
+
+solrCollection: tweets
+
+kafkaStreams:
+  # See https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/StreamsConfig.java
+  # See https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/consumer/ConsumerConfig.java
+  # See https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/producer/ProducerConfig.java
+
+  # Unique name for this Kafka Streams app
+  application.id: bop-ingest
+  # Kafka Brokers
+  bootstrap.servers: localhost:9092
+  # ZooKeeper
+  zookeeper.connect: localhost:2181
+
+  # If have no offset, consume from "earliest" or "latest"?
+  #auto.offset.reset: latest
+
+  #num.stream.threads: 1
+
+logging:
+  level: INFO
+  #loggers:
+    #edu.harvard.gis.hhypermap.bop: DEBUG
