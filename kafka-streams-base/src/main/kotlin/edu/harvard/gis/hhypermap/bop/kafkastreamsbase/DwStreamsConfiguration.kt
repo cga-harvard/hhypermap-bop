@@ -22,6 +22,9 @@ import io.dropwizard.logging.LoggingFactory
 import java.util.*
 import javax.validation.constraints.NotNull
 
+/**
+ * Configuration base class handling common stuff.
+ */
 abstract class DwStreamsConfiguration {
 
   private var _kafkaStreamsConfig: MutableMap<String,Any> = mutableMapOf()

@@ -18,7 +18,7 @@ package edu.harvard.gis.hhypermap.bop.enrich
 
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode
-import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.StreamBase
+import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwStreamApplication
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsConfig
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 open class Enrich(mainArgs: Array<String>) :
-        StreamBase<EnrichDwConfiguration>(mainArgs, EnrichDwConfiguration::class.java) {
+        DwStreamApplication<EnrichDwConfiguration>(mainArgs, EnrichDwConfiguration::class.java) {
   companion object {
     @JvmStatic
     fun main(args: Array<String>) { Enrich(args).run() }
@@ -94,7 +94,7 @@ open class Enrich(mainArgs: Array<String>) :
   class GeoAdminEnricher(etlConfig: EnrichDwConfiguration, coll: String)
       : ValueMapper<ObjectNode, ObjectNode>, AutoCloseable {
     val log = LoggerFactory.getLogger(this.javaClass)
-    val solrTimer = StreamBase.METRIC_REGISTRY.timer("enrich.geoadmin.$coll.solr")!!
+    val solrTimer = DwStreamApplication.METRIC_REGISTRY.timer("enrich.geoadmin.$coll.solr")!!
     val shouldRecompute = etlConfig.geoAdminRecompute
     val solrClient = etlConfig.newSolrClient(etlConfig.geoAdminSolrConnectionString +coll)
     val jsonKey = "hcga_geoadmin_" + coll.toLowerCase()

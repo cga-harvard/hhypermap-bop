@@ -39,8 +39,11 @@ import java.util.concurrent.CountDownLatch
 import javax.management.ObjectName
 import javax.management.StandardMBean
 
-
-abstract class StreamBase<C : DwStreamsConfiguration>(mainArgs: Array<String>, cClazz: Class<C>) {
+/**
+ * A DropWizard oriented Application base class that uses Kafka Streams.  It's not a typical
+ * DropWizard app since there is no web interface.
+ */
+abstract class DwStreamApplication<C : DwStreamsConfiguration>(mainArgs: Array<String>, cClazz: Class<C>) {
   companion object {
     val METRIC_REGISTRY = MetricRegistry()
   }
@@ -49,7 +52,7 @@ abstract class StreamBase<C : DwStreamsConfiguration>(mainArgs: Array<String>, c
   val dwConfig: C
   val kafkaStreams: KafkaStreams
 
-  private val hooks = ArrayDeque<() -> Unit>()
+  private val closeHooks = ArrayDeque<() -> Unit>()
 
   init {
     Runtime.getRuntime().addShutdownHook(Thread(null, {
@@ -60,16 +63,16 @@ abstract class StreamBase<C : DwStreamsConfiguration>(mainArgs: Array<String>, c
   fun addCloseHook(hook: AutoCloseable) = addCloseHook({hook.close()})
 
   fun addCloseHook(hook: ()-> Unit) {
-    synchronized(hooks) {
-      hooks.addLast(hook)
+    synchronized(closeHooks) {
+      closeHooks.addLast(hook)
     }
   }
 
   fun runCloseHooks() {
     log.debug("Running close hooks")
-    synchronized(hooks) { // only run close hooks in serial
+    synchronized(closeHooks) { // only run close hooks in serial
       while (true) {
-        val hook = hooks.pollLast() ?: break
+        val hook = closeHooks.pollLast() ?: break
         try {
           hook.invoke()
         } catch (e: Exception) {
@@ -92,7 +95,7 @@ abstract class StreamBase<C : DwStreamsConfiguration>(mainArgs: Array<String>, c
     dwConfig.loggingConfig.configure(METRIC_REGISTRY, "dw")
     addCloseHook { dwConfig.loggingConfig.stop()}
 
-    exposeFileAsJmx(log.name+".GIT", "/git.properties")
+    exposeRsrcFileAsJmx(log.name+".GIT", "/git.properties")
 
     val jmxReporter = JmxReporter.forRegistry(METRIC_REGISTRY).build()
     jmxReporter.start()
@@ -127,7 +130,7 @@ abstract class StreamBase<C : DwStreamsConfiguration>(mainArgs: Array<String>, c
             .build(configProvider, configPath)
   }
 
-  fun exposeFileAsJmx(jmxName: String, rsrcPath: String) {
+  fun exposeRsrcFileAsJmx(jmxName: String, rsrcPath: String) {
     val mbean = object : StandardMBean(TextMBean::class.java, false), TextMBean {
       override val text: String
         get() =

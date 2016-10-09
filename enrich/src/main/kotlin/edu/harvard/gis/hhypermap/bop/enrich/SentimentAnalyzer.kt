@@ -16,7 +16,7 @@
 
 package edu.harvard.gis.hhypermap.bop.enrich
 
-import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.StreamBase
+import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwStreamApplication
 import org.slf4j.LoggerFactory
 import java.io.*
 import java.net.Socket
@@ -36,7 +36,7 @@ class SentimentAnalyzer (hostColonPort: String) : Closeable {
   private val writer: PrintWriter
   private val reader: BufferedReader
 
-  private val timer = StreamBase.METRIC_REGISTRY.timer("enrich.calcSentiment")!!
+  private val timer = DwStreamApplication.METRIC_REGISTRY.timer("enrich.calcSentiment")!!
 
   init {
     // Connect to the sentiment server and wait until READY is read
