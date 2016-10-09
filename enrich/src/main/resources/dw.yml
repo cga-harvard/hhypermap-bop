@@ -1,12 +1,17 @@
 kafkaSourceTopic: etlIn
 kafkaDestTopic: etlOut
 
-# See https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/StreamsConfig.java
-# See https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/consumer/ConsumerConfig.java
-# See https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/producer/ProducerConfig.java
+sentiment.server: localhost:1234
+
+geoAdmin.solrConnectionString: http://localhost:8983/solr/
+
 kafkaStreams:
+  # See https://github.com/apache/kafka/blob/trunk/streams/src/main/java/org/apache/kafka/streams/StreamsConfig.java
+  # See https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/consumer/ConsumerConfig.java
+  # See https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/producer/ProducerConfig.java
+
   # Unique name for this Kafka Streams app
-  application.id: TweetEnrichEtl
+  application.id: enrich
   # Kafka Brokers
   bootstrap.servers: localhost:9092
   # ZooKeeper
@@ -19,14 +24,10 @@ kafkaStreams:
 
   #num.stream.threads: 1
 
-sentiment.server: localhost:1234
-
-geoAdmin.solrConnectionString: http://localhost:8983/solr/
-
 logging:
   level: INFO
   loggers:
-    #edu.harvard.gis.hhypermap.etl: DEBUG
+    #edu.harvard.gis.hhypermap.bop: DEBUG
     # For EmbeddedSolr
     org.apache.solr.update: WARN
     org.apache.solr.core.SolrCore.Request: WARN

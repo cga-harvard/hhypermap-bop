@@ -25,8 +25,7 @@ services:
        -Dcom.sun.management.jmxremote.rmi.port=9999
        -Dcom.sun.management.jmxremote.port=9999
        -Dcom.sun.management.jmxremote.port=9999
-       -Dsolr.lock.type=none
-      JAVA_OPTS: -XX:NewRatio=1
+      JAVA_OPTS: -XX:NewRatio=1 -Dsolr.lock.type=none
     volumes:
       - /media/attached/solr-geo-admin-home:/var/solrhome:ro
     affinity:
