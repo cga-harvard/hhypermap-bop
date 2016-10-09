@@ -275,6 +275,8 @@ class SearchWebService(
     if (solrQuery.rows == 0) {
       return
     }
+    // Set FL:
+    solrQuery.setFields("id,created_at,coord,user_name,text")
 
     // Set Sort:
     val sort = if (aDocsSort == DocSortEnum.score && qConstraints.qText == null) {//score requires query string
@@ -377,9 +379,7 @@ class SearchWebService(
     return map
   }
 
-  // This is the reverse of what we do in a Solr URP on ingest (Solr Long is signed)
-  private fun solrIdToTweetId(value: Any): String =
-          (BigInteger.valueOf(value as Long) - BigInteger.valueOf(Long.MIN_VALUE)).toString()
+  private fun solrIdToTweetId(value: Any): String = (value as Long).toString()
 
   @JsonPropertyOrder("a.matchDocs", "d.docs", "a.time", "a.hm", "a.user", "a.text", "timing")
   data class SearchResponse (

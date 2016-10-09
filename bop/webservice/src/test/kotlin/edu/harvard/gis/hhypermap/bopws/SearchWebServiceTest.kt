@@ -212,9 +212,9 @@ class SearchWebServiceTest {
     try {
       assert(200 == rsp.status, {"Bad Status: ${rsp.status}, entity: ${rsp.readEntity(Any::class.java)}"})
       val resultCsv: String = rsp.readEntity(String::class.java)!!;
-      assertEquals("""id,text,created_at,coord,user_name
-9223373464830775808,Orange fruit fruit fruit,2015-04-02T12:00:00Z,"42.5,-70",Otto
-9223373464744375808,Apple fruit,2015-04-01T12:00:00Z,"41.5,-70",Alex
+      assertEquals("""id,created_at,coord,user_name,text
+1427976000000,2015-04-02T12:00:00Z,"42.5,-70",Otto,Orange fruit fruit fruit
+1427889600000,2015-04-01T12:00:00Z,"41.5,-70",Alex,Apple fruit
 """, resultCsv)
     } finally {
       rsp.close() //note: doesn't implement Closeable but has close method
