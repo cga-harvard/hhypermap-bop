@@ -341,6 +341,9 @@ class SearchWebService(
     } else {
       // Calculate distErr that will approximate aHmLimit many cells as an upper bound
       val hmRect: Rectangle = hmRectStr.parseGeoBox()
+      if (!hmRect.hasArea()) {
+        throw WebApplicationException("Can't compute heatmap; the rect geom has no area: $hmRectStr")
+      }
       val degreesSideLen = (hmRect.width + hmRect.height) / 2.0 // side len of square (in degrees units)
       val cellsSideLen = Math.sqrt(aHmLimit.toDouble()) // side len of square (in target cell units)
       val cellSideLenInDegrees = degreesSideLen / cellsSideLen * 2
