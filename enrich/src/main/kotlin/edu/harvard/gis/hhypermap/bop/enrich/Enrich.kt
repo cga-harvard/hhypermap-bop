@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.params.ModifiableSolrParams
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 open class Enrich(mainArgs: Array<String>) :
         DwStreamApplication<EnrichDwConfiguration>(mainArgs, EnrichDwConfiguration::class.java) {
@@ -42,7 +43,7 @@ open class Enrich(mainArgs: Array<String>) :
 
     val valueMappers: MutableList<ValueMapper<ObjectNode, ObjectNode>> = mutableListOf()
     dwConfig.sentimentServer?.let {
-      val enricher = SentimentEnricher(dwConfig, it)
+      val enricher = SentimentEnricher(dwConfig, it, streamsConfig.getInt(StreamsConfig.NUM_STREAM_THREADS_CONFIG) ?: 1)
       addCloseHook(enricher)
       valueMappers.add(enricher)
     }
@@ -67,22 +68,39 @@ open class Enrich(mainArgs: Array<String>) :
     return KafkaStreams(builder, streamsConfig)
   }
 
-  class SentimentEnricher(etlConfig: EnrichDwConfiguration, sentServer: String)
+  class SentimentEnricher(etlConfig: EnrichDwConfiguration, sentServer: String, threads: Int)
       : ValueMapper<ObjectNode, ObjectNode>, AutoCloseable {
     val log = LoggerFactory.getLogger(this.javaClass)
-    val sentimentAnalyzer = SentimentAnalyzer(sentServer)
     val shouldRecompute = etlConfig.sentimentRecompute
     val SENTIMENT_KEY = "hcga_sentiment"
 
+    // We create an array of SentimentAnalyzer, one for each thread, pre-initialized.
+    val analyzers: Array<SentimentAnalyzer>
+    init {
+      log.info("Creating $threads SentimentAnalyzer clients")
+      analyzers = Array(threads, { i -> SentimentAnalyzer(sentServer) })
+      // TODO load in parallel instead; it's time consuming to create
+    }
+    val analyzerThreadLocal = object : ThreadLocal<SentimentAnalyzer>() {
+      val threadCounter = AtomicInteger(0)
+      override fun initialValue(): SentimentAnalyzer = analyzers[threadCounter.andIncrement]
+    }
+
     override fun close() {
-      sentimentAnalyzer.close()
+      for (analyzer in analyzers) {
+        try {
+          analyzer.close()
+        } catch(e: Exception) {
+          log.error(e.toString(), e)
+        }
+      }
     }
 
     override fun apply(tweet: ObjectNode): ObjectNode {
       if (shouldRecompute || ! tweet.has(SENTIMENT_KEY)) {
         log.trace("Sentiment enriching: processing {}", tweet)
         val tweetText = tweet.get("text").textValue()
-        val sentimentSymbol = sentimentAnalyzer.calcSentiment(tweetText).toString() // assume right format
+        val sentimentSymbol = analyzerThreadLocal.get().calcSentiment(tweetText).toString() // assume right format
         tweet.put(SENTIMENT_KEY, sentimentSymbol)
       } else {
         log.trace("Sentiment enriching: skipping {}", tweet)
@@ -141,7 +159,7 @@ open class Enrich(mainArgs: Array<String>) :
               } else {
                 throw RuntimeException("Unexpected type, field=$f class=${v.javaClass} val=$v")
               }
-              obj.put(f,strValue)
+              obj.put(f, strValue)
             }
           }
         })

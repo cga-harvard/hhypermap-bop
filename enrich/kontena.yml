@@ -14,6 +14,8 @@ services:
     environment:
       dw.kafkaStreams.bootstrap-servers: kafka-kafka:9092
       dw.kafkaStreams.zookeeper-connect: kafka-zookeeper:2181
+      # process in multiple threads (but no more than there are CPUs on this machine)
+      dw.kafkaStreams.num-stream-threads: 2
       dw.sentiment.server: ${project}-sent-server:1234
       dw.geoAdmin.solrConnectionString: embedded:///var/solrhome/
       JMX:
@@ -29,8 +31,8 @@ services:
     volumes:
       - /media/attached/solr-geo-admin-home:/var/solrhome:ro
     affinity:
-       - service==sent-server
-      #- label==enrich
+       - label==enrich
+    #TODO to talk to sent-server on local host, refer via localhost?
 
   sent-server:
     extends:
@@ -40,7 +42,6 @@ services:
       - /media/attached/classifier-data:/var/classifier/:ro
     # don't wait-for port; the python app isn't graceful about it
     affinity:
-      # - service==enrich
       - label==enrich
 
   # no solr-geo-admin service here... we embed Solr instead for performance
