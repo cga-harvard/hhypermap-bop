@@ -17,16 +17,43 @@
 package edu.harvard.gis.hhypermap.bop.ingest
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwStreamsConfiguration
+import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwConfiguration
+import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwKafkaStreamsConfiguration
+import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient
 import org.hibernate.validator.constraints.NotEmpty
+import java.util.*
+import javax.validation.constraints.NotNull
 import javax.validation.constraints.Pattern
 
 
-class IngestDwConfiguration : DwStreamsConfiguration() {
+class IngestDwConfiguration : DwConfiguration() {
+
+  // Kafka stuff:
 
   @JsonProperty @NotEmpty
   var kafkaSourceTopic: String? = null
+
+  @JsonProperty
+  val kafkaOffsetCommitIntervalMs: Long = 5000
+
+  private var _kafkaConsumerConfig: MutableMap<String,Any> = mutableMapOf()
+  /** governed by KafkaConsumer */
+  val kafkaConsumerConfig: MutableMap<String,Any>
+    @JsonProperty("kafkaConsumer")
+    @NotNull
+    get() {
+      // rewrite hyphens to periods. We do this so we can use sys & env prop overrides without
+      // DropWizard interpreting the '.' as a sub-object
+
+      // It's bad practice to update in a getter... but not sure what's better
+      _kafkaConsumerConfig = _kafkaConsumerConfig.mapKeysTo(
+              LinkedHashMap(_kafkaConsumerConfig.size),
+              { it.key.replace('-', '.') } )
+      return _kafkaConsumerConfig
+    }
+
+  // Solr stuff:
 
   @JsonProperty @NotEmpty @Pattern(regexp = "http://(.+)/")
   var solrConnectionString: String? = null
@@ -48,4 +75,6 @@ class IngestDwConfiguration : DwStreamsConfiguration() {
             .withQueueSize(solrQueueSize)
             .build()
   }
+
+
 }

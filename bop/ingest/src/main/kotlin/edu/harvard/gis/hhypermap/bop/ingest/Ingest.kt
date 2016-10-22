@@ -16,50 +16,82 @@
 
 package edu.harvard.gis.hhypermap.bop.ingest
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
-import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwStreamApplication
-import org.apache.kafka.common.serialization.Serde
-import org.apache.kafka.streams.KafkaStreams
-import org.apache.kafka.streams.StreamsConfig
-import org.apache.kafka.streams.kstream.KStreamBuilder
+import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwApplication
+import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.JsonSerde
+import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.consumer.KafkaConsumer
+import org.apache.kafka.common.serialization.LongDeserializer
 import org.apache.solr.common.SolrInputDocument
-import java.time.*
-import java.time.format.DateTimeFormatter
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneOffset
 import java.util.*
+import java.util.concurrent.TimeUnit
 
-
+/** Consume records from Kafka and send to Solr  */
 class Ingest(mainArgs: Array<String>) :
-        DwStreamApplication<IngestDwConfiguration>(mainArgs, IngestDwConfiguration::class.java) {
+        DwApplication<IngestDwConfiguration>(mainArgs, IngestDwConfiguration::class.java) {
   companion object {
     @JvmStatic
-    fun main(args: Array<String>) { Ingest(args).run() }
+    fun main(args: Array<String>) = Ingest(args).run()
   }
 
-  override fun buildStreams(streamsConfig: StreamsConfig,
-                            keySerde: Serde<Long>, valueSerde: Serde<ObjectNode>): KafkaStreams {
+  fun run() {
     val solrClient = dwConfig.newSolrClient()
     addCloseHook(solrClient)
 
-    val builder = KStreamBuilder()
-    builder.stream<Long, ObjectNode>(keySerde, valueSerde, dwConfig.kafkaSourceTopic!!)
-            .foreach { key, objectNode ->
-              //TODO it seems in-flight messages here could get lost in the event of a crash.
-              // So instead of ConcurrentUpdateSolrClient... we do batching here
-              val doc = try {
-                jsonToSolrInputDoc(objectNode)
-              } catch (e: Exception) {
-                log.error("Bad tweet format? $key $objectNode")
-                throw e
-              }
-              solrClient.add(dwConfig.solrCollection, doc)
+    // We will commit ourselves since we know when Solr has the docs; Kafka doesn't know
+    dwConfig.kafkaConsumerConfig[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = "false"
+
+    val kafkaConsumer = KafkaConsumer(dwConfig.kafkaConsumerConfig,
+            LongDeserializer(), JsonSerde().deserializer())
+    addCloseHook(kafkaConsumer)
+
+
+    kafkaConsumer.subscribe(Collections.singleton(dwConfig.kafkaSourceTopic))
+
+    // this approach measures durations accurately; it's not to actually denote current time
+    fun currentTimeMs() = TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
+
+    // note: we commit offsets to Kafka after a configured time threshold passes since the most
+    //   recent non-committed record is returned from poll.
+    var nextCommitTimeMs = -1L
+    while (true) {
+      // calc how long poll() can take
+      val pollTimeoutMs = if (nextCommitTimeMs == -1L)
+        Long.MAX_VALUE // forever
+      else
+        Math.max(0, nextCommitTimeMs - currentTimeMs()) // until next commit time
+      val records = kafkaConsumer.poll(pollTimeoutMs)
+
+      // calc next commit time if it's not set and we have records
+      if (nextCommitTimeMs == -1L && records.isEmpty == false) {
+        nextCommitTimeMs = currentTimeMs() + dwConfig.kafkaOffsetCommitIntervalMs
+      }
+
+      // convert records to Solr docs and send to Solr asynchronously
+      for (record in records) { // usually one per Kafka partition/topic
+        val jsonNode = record.value()
+        try {
+          solrClient.add(dwConfig.solrCollection, jsonToSolrInputDoc(jsonNode as ObjectNode))
+        } catch(e: Exception) {
+          log.error("Bad tweet format? $jsonNode")
+          throw e
+        }
+      }
+
+      // maybe commit offsets
+      if (currentTimeMs() >= nextCommitTimeMs) {
+        log.debug("Flushing queue to Solr then committing Kafka offsets")
+        solrClient.blockUntilFinished() // unique method of ConcurrentUpdateSolrClient
+        kafkaConsumer.commitSync()
+        nextCommitTimeMs = -1L
+      }
     }
-    return KafkaStreams(builder, streamsConfig)
   }
-
-
 }
-
 
 fun jsonToSolrInputDoc(objectNode: ObjectNode): SolrInputDocument {
   //  val createdAtDateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT)

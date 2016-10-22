@@ -25,9 +25,10 @@ import javax.validation.constraints.NotNull
 /**
  * Configuration base class handling common stuff.
  */
-abstract class DwStreamsConfiguration {
+abstract class DwKafkaStreamsConfiguration : DwConfiguration() {
 
   private var _kafkaStreamsConfig: MutableMap<String,Any> = mutableMapOf()
+  /** governed by KafkaStreams */
   val kafkaStreamsConfig: MutableMap<String,Any>
     @JsonProperty("kafkaStreams")
     @NotNull
@@ -41,9 +42,5 @@ abstract class DwStreamsConfiguration {
               { it.key.replace('-', '.') } )
       return _kafkaStreamsConfig
     }
-
-  @JsonProperty("logging")
-  @NotNull
-  val loggingConfig: LoggingFactory = DefaultLoggingFactory()
 
 }

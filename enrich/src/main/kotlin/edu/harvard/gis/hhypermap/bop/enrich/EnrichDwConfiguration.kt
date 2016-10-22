@@ -17,7 +17,7 @@
 package edu.harvard.gis.hhypermap.bop.enrich
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwStreamsConfiguration
+import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwKafkaStreamsConfiguration
 import io.dropwizard.logging.DefaultLoggingFactory
 import io.dropwizard.logging.LoggingFactory
 import org.apache.solr.client.solrj.SolrClient
@@ -33,7 +33,7 @@ import java.util.*
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Pattern
 
-class EnrichDwConfiguration : DwStreamsConfiguration() {
+class EnrichDwConfiguration : DwKafkaStreamsConfiguration() {
 
   @JsonProperty
   @NotEmpty
