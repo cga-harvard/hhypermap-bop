@@ -50,7 +50,7 @@ services:
       - zookeeper
       - kafka
     external_links:
-      - lb-pub-loadbalancer
+      - loadbalancer-loadbalancer
     environment:
       ZK_HOSTS: ${project}-zookeeper.kontena.local:2181
       KONTENA_LB_INTERNAL_PORT: 9000
@@ -60,6 +60,7 @@ services:
       KM_USERNAME: "admin"
     deploy:
       wait_for_port: 9000
+      interval: 2d
     secrets:
       - secret: KAFKA_MANAGER_PASSWORD
         name: KM_PASSWORD

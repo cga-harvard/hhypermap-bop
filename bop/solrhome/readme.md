@@ -1,4 +1,26 @@
-# Preparation
+# Kontena (production) Preparation:
+
+Upload config to ZooKeeper:  (might have to use IP not hostname when on Kontena VPN)
+
+    docker run --rm -v "$(pwd)/bop/solrhome/:/opt/solr/server/solr" harvardcga/solr \
+        /opt/solr/bin/solr zk -upconfig -n bop -d server/solr/configsets/bop/conf/ -z bop-solr-1:9983
+
+If the collection already exists, then "reload" it and stop following
+instructions.
+
+    curl -XPOST http://bop-solr:8983/solr/admin/collections \
+        -F action=RELOAD -F name=bop
+        
+Create collection with alias
+
+    curl -XPOST http://bop-solr:8983/solr/admin/collections \
+        -F action=CREATE -F name=bop -F numShards=1 -F maxShardsPerNode=4
+    curl -XPOST http://bop-solr:8983/solr/admin/collections \
+        -F action=CREATEALIAS -F name=tweets -F collections=bop
+
+# Experimentation (local)
+
+## Preparation
 
 Start Solr in SolrCloud mode.
 We use this directory here as the "solr home" only to keep the state local
@@ -9,15 +31,14 @@ to this project and not intermingled with other possible Solr projects.
 Explicitly upload a config set (also to update it when it changes)
 
     docker exec -ti bop-solr solr zk -upconfig -n bop -d server/solr/configsets/bop/conf/ -z localhost:9983
-    # Or if NOT running Solr locally... (might have to use IP not hostname when on Kontena VPN)
-    docker run --rm -v "$(pwd)/bop/solrhome/:/opt/solr/server/solr" harvardcga/solr \
-        /opt/solr/bin/solr zk -upconfig -n bop -d server/solr/configsets/bop/conf/ -z 10.81.1.164:9983
-  
-Reload a collection using this config (obviously only after it's there)
+    
+Either create a collection if it doesn't exist yet, or reload it if it does:
 
-  curl -XPOST http://localhost:8983/solr/admin/collections -F action=RELOAD -F name=bop
-
-# Experimentation
+    curl -XPOST http://bop-solr:8983/solr/admin/collections \
+    -F action=CREATE -F name=bop -F numShards=1 -F maxShardsPerNode=4
+    
+    curl -XPOST http://localhost:8983/solr/admin/collections \
+    -F action=RELOAD -F name=bop
 
 Create the "bop" collection WITHOUT time sharding (purely for testing).
 

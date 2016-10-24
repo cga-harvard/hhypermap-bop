@@ -1,6 +1,6 @@
 ---
 version: '2'
-name: lb-pub
+name: loadbalancer
 services:
   loadbalancer:
     image: kontena/lb:latest
