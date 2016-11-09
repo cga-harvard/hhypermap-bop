@@ -1,4 +1,4 @@
-FROM solr:6-alpine
+FROM solr:6.2.1-alpine
 
 MAINTAINER David Smiley <dsmiley@apache.org>
 
@@ -32,3 +32,5 @@ ENV GC_TUNE="-XX:NewRatio=3 \
 ENV ENABLE_REMOTE_JMX_OPTS="false"
 
 ENV SOLR_OPTS="-Xss256k"
+
+VOLUME /opt/solr/server/solr/
