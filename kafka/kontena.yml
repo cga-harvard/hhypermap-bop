@@ -3,22 +3,42 @@ version: '2'
 name: kafka
 services:
   
-  #TODO HA configuration. See https://github.com/confluentinc/cp-docker-images/blob/master/examples/kafka-cluster/docker-compose.yml
-  # NOTE: we're fine with using Docker local image for storage; it shouldn't be much data.
-  zookeeper:
+  # HA configuration. See https://github.com/confluentinc/cp-docker-images/blob/master/examples/kafka-cluster/docker-compose.yml
+  # NOTE: we're fine with using Docker local volumes; it shouldn't be much data.
+  # TODO Zookeeper 3.4.7 would be nicer (than 3.4.6) in a docker env due to ZOOKEEPER-1506
+  zookeeper1:
     extends:
       file: docker-compose.yml
       service: zookeeper
     stateful: true
     deploy:
       wait_for_port: 2181
+    affinity:
+      - node==kafka1.novalocal
     environment:
       ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: ${project}-zookeeper1:22888:23888;${project}-zookeeper2:22888:23888;${project}-zookeeper3:22888:23888
+      ZOOKEEPER_AUTOPURGE_PURGE_INTERVAL: 24
       # Confluent's image uses "KAFKA_JMX_*" even for ZooKeeper
-      KAFKA_JMX_PORT: 9999
-      KAFKA_JMX_HOSTNAME: ${project}-zookeeper-1.kontena.local
+      #KAFKA_JMX_PORT: 9999
+      #KAFKA_JMX_HOSTNAME: ${project}-zookeeper-1.kontena.local
 
-      
+  zookeeper2:
+    extends:
+      service: zookeeper1
+    affinity:
+      - node==kafka2.novalocal
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+
+  zookeeper3:
+    extends:
+      service: zookeeper1
+    affinity:
+      - node==kafka3.novalocal
+    environment:
+      ZOOKEEPER_SERVER_ID: 3
+
   #TODO HA configuration. See https://github.com/confluentinc/cp-docker-images/blob/master/examples/kafka-cluster/docker-compose.yml
   kafka:
     extends:
