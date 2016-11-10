@@ -31,7 +31,7 @@ Alternatively maybe you should create a new "application-id" if that's fitting.
 Background info: http://www.confluent.io/blog/data-reprocessing-with-kafka-streams-resetting-a-streams-application/
 
     docker run --rm -ti confluentinc/cp-kafka kafka-run-class kafka.tools.StreamsResetter \
-        --bootstrap-servers kafka-kafka:9092 --zookeeper kafka-zookeeper:2181 \
+        --bootstrap-servers kafka-kafka:9092 --zookeeper kafka-zookeeper1:2181 \
         --application-id enrich --input-topics tweets
     
     Also, shouldn't need to do this as the stream has no
