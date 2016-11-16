@@ -13,7 +13,7 @@ services:
           cmd: mvn -DskipTests clean validate assembly:assembly
     environment:
       dw.kafkaStreams.bootstrap-servers: kafka-kafka:9092
-      dw.kafkaStreams.zookeeper-connect: kafka-zookeeper1:2181,kafka-zookeeper2:2181,kafka-zookeeper3:2181
+      dw.kafkaStreams.zookeeper-connect: kafka-zookeeper-1:2181,kafka-zookeeper-2:2181,kafka-zookeeper-3:2181
       # process in multiple threads (but no more than there are CPUs on this machine)
       dw.kafkaStreams.num-stream-threads: 2
       dw.sentiment.server: ${project}-sent-server:1234

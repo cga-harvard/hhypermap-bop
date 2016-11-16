@@ -18,11 +18,11 @@ Copy topic from one to another:
 
     #reset if ran before
     docker run --rm -ti confluentinc/cp-kafka kafka-consumer-groups \
-            --zookeeper kafka-zookeeper1:2181 \
+            --zookeeper kafka-zookeeper:2181 \
             --delete --group replay-log-producer
     # do it
     docker run --rm -ti -e KAFKA_HEAP_OPTS=-Xmx800M confluentinc/cp-kafka kafka-run-class kafka.tools.ReplayLogProducer \
-             --broker-list kafka-kafka:9092 --zookeeper kafka-zookeeper1:2181 \
+             --broker-list kafka-kafka:9092 --zookeeper kafka-zookeeper:2181 \
              --inputtopic smileTemp --outputtopic smileLz4 \
              --property compression.type=lz4
 
@@ -31,4 +31,4 @@ ZooKeeper
 
 Zookeeper CLI to inspect and modify:
 
-    docker run --rm -ti confluentinc/cp-kafka zookeeper-shell kafka-zookeeper1.kontena.local:2181
+    docker run --rm -ti confluentinc/cp-kafka zookeeper-shell kafka-zookeeper.kontena.local:2181
