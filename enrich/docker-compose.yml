@@ -6,7 +6,7 @@ services:
     build: .
     image: harvardcga/tweet-enrich
     environment:
-      dw.kafkaSourceTopic: tweets
+      dw.kafkaSourceTopic: CGATweets
       dw.kafkaDestTopic: tweets-enriched
       # use a hyphen for keys beneath "kafkaStreams"
       #dw.kafkaStreams.application-id: enrich
