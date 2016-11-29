@@ -74,7 +74,8 @@ services:
       #dw.logging.level: DEBUG
       SOLR_HOST: ${project}-solr-1
       SOLR_PORT: 8983
-      solrCollection: bop
+      dw.solrCollection: bop
+      dw.server.applicationContextPath: /bopws
       JMX:
         -Dcom.sun.management.jmxremote=true
         -Dcom.sun.management.jmxremote.authenticate=false
@@ -82,8 +83,7 @@ services:
         -Dcom.sun.management.jmxremote.local.only=false
         -Dcom.sun.management.jmxremote.rmi.port=9999
         -Dcom.sun.management.jmxremote.port=9999
-        -Djava.rmi.server.hostname=${project}-webservice-1
-      dw.server.applicationContextPath: /bopws
+      JAVA_OPTS: -Xmx750M
       KONTENA_LB_INTERNAL_PORT: 8080
       KONTENA_LB_VIRTUAL_PATH: /bopws
       KONTENA_LB_KEEP_VIRTUAL_PATH: true
@@ -105,9 +105,14 @@ services:
       - kafka-kafka
       - kafka-zookeeper
     environment:
+      # see dw.yml
+      dw.kafkaConsumer.auto-offset-reset: earliest
       dw.kafkaConsumer.bootstrap-servers: kafka-kafka:9092
       dw.kafkaConsumer.zookeeper-connect: kafka-zookeeper-1:2181,kafka-zookeeper-2:2181,kafka-zookeeper-3:2181
+      dw.kafkaConsumer.group-id: bop-ingest-bopcollection
+      # We send to the node containing "RT" (most likely where needed, and kinda needed for our date URP)
       dw.solrConnectionString: http://${project}-solr-1:8983/solr/
+      dw.solrCollection: bop #note: update dw.kafkaConsumer.group-id accordingly
       JMX:
         -Dcom.sun.management.jmxremote=true
         -Dcom.sun.management.jmxremote.authenticate=false
@@ -115,7 +120,7 @@ services:
         -Dcom.sun.management.jmxremote.local.only=false
         -Dcom.sun.management.jmxremote.rmi.port=9999
         -Dcom.sun.management.jmxremote.port=9999
-        -Djava.rmi.server.hostname=${project}-ingest.kontena.local
-      JAVA_OPTS: -XX:NewRatio=1
+      # NewRatio=1 means 1/2 heap is for young gen since this is ETL.
+      JAVA_OPTS: -XX:NewRatio=1 -Xmx750M
     affinity:
       - node==bop-solr-1.novalocal

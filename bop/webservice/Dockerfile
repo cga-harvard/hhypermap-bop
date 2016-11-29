@@ -9,7 +9,7 @@ COPY target/libs/ libs/
 COPY target/*.jar libs/
 COPY bop-ws.yml .
 
-ENV JAVA_JMX=\
+ENV JMX=\
     JAVA_OPTS=
 
 EXPOSE 8080 8081

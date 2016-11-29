@@ -12,6 +12,7 @@ services:
         - name: maven
           cmd: mvn -DskipTests clean validate assembly:assembly
     environment:
+      # see dw.yml
       dw.kafkaStreams.auto-offset-reset: earliest
       dw.kafkaStreams.bootstrap-servers: kafka-kafka:9092
       dw.kafkaStreams.zookeeper-connect: kafka-zookeeper-1:2181,kafka-zookeeper-2:2181,kafka-zookeeper-3:2181
@@ -23,10 +24,8 @@ services:
        -Dcom.sun.management.jmxremote=true
        -Dcom.sun.management.jmxremote.authenticate=false
        -Dcom.sun.management.jmxremote.ssl=false
-       -Djava.rmi.server.hostname=${project}-enrich.kontena.local
        -Dcom.sun.management.jmxremote.local.only=false
        -Dcom.sun.management.jmxremote.rmi.port=9999
-       -Dcom.sun.management.jmxremote.port=9999
        -Dcom.sun.management.jmxremote.port=9999
       JAVA_OPTS: -XX:NewRatio=1 -Dsolr.lock.type=none
     volumes:
