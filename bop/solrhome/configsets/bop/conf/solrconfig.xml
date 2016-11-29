@@ -19,7 +19,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>6.0.1</luceneMatchVersion>
+  <luceneMatchVersion>6.3.0</luceneMatchVersion>
 
   <!-- Data Directory
 
@@ -187,34 +187,32 @@
 
   </updateHandler>
 
-  <!-- for posting Twitter's JSON -->
-  <requestHandler name="/update/twitterJson" class="solr.UpdateRequestHandler">
+
+
+  <requestHandler name="/update" class="solr.UpdateRequestHandler">
     <lst name="defaults">
-      <str name="update.contentType">application/json</str>
-      <bool name="json.command">false</bool>
-      <str name="update.chain">twitterJson</str>
-    </lst>
-    <lst name="appends">
-      <str name="f">id:/id_str</str><!-- we will parse as unsigned long in JS-->
-      <str name="f">/created_at</str><!-- note format below -->
-      <str name="f">coord:/coordinates/coordinates</str>
-      <str name="f">/text</str>
-      <str name="f">user_name:/user/name</str>
+      <str name="update.chain">${solr.update.chain:dateSharded}</str>
+
+      <!-- config for DateShardingURPFactory: -->
+      <str name="router.field">created_at</str>
+      <str name="shardMaxAge">+14DAYS</str>
+      <str name="docMaxAge">/DAY-150DAYS</str>
+      <str name="TZ">US/Eastern</str>
     </lst>
   </requestHandler>
 
-  <updateRequestProcessorChain name="twitterJson">
-    <processor class="solr.StatelessScriptUpdateProcessorFactory">
-      <str name="script">update-twitterJson.js</str>
-      <lst name="params">
-        <str name="coordField">coord</str>
-      </lst>
-    </processor>
-    <processor class="solr.ParseDateFieldUpdateProcessorFactory">
-      <str name="format">yyyy-MM-dd HH:mm:ss</str>
-    </processor>
-    <processor class="solr.LogUpdateProcessorFactory"/>
+  <updateRequestProcessorChain name="standaloneTesting">
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="dateSharded">
+    <processor class="edu.harvard.gis.hhypermap.bop.solrplugins.DateShardingURPFactory" />
     <processor class="solr.DistributedUpdateProcessorFactory"/>
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldName">_route_</str>
+    </processor>
+    <!-- DWS: TOO noisy <processor class="solr.LogUpdateProcessorFactory" />-->
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
