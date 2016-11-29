@@ -3,22 +3,58 @@ version: '2'
 name: bop
 services:
 
+  # NOTE: we're fine with using Docker local volumes; it shouldn't be much data.
+  zookeeper:
+    image: harvardcga/zookeeper:3.4
+    ports:
+      - "2181:2181"
+    environment:
+      #ZOO_MY_ID: 1  (automatic using KONTENA_SERVICE_INSTANCE_NUMBER in the entrypoint script)
+      ZOO_SERVERS: server.1=${project}-zookeeper-1:2888:3888 server.2=${project}-zookeeper-2:2888:3888 server.3=${project}-zookeeper-3:2888:3888
+      ZOO_AUTOPURGE_PURGE_INTERVAL: 24
+    deploy:
+      wait_for_port: 2181
+      # Kontena doesn't start zk properly without this:
+      min_health: 0.0
+    instances: 3
+    affinity:
+      # Run Zookeeper on the first three Solr nodes (same host as Solr).
+      # %%i is instance id
+      - node==bop-solr-%%i.novalocal
+    stateful: true
+
+  # For Solr, we treat bop-solr-1 kinda special in that we deliberately do various processing on
+  # this node: RT shard is here, SolrCloud's Overseer is here, the node also runs bop-webservice
+  # and bop-ingest, and searches
+  # go here, new data always comes here first. But not much data here. The primary shards are all
+  # on the other nodes.
   solr:
     image: harvardcga/solr
-    # SolrCloud mode. Embedded Zookeeper (port 9983), for now.
-    command: -c
+    # SolrCloud mode, remote zookeeper.
+    command: -c -z ${project}-zookeeper-1:2181,${project}-zookeeper-2:2181,${project}-zookeeper-3:2181
     environment:
       SOLR_HEAP: 4G
-      SOLR_HOST: ${project}-solr-1
-      # NOTE: JMX port is 18983
-      ENABLE_REMOTE_JMX_OPTS: true
+      ENABLE_REMOTE_JMX_OPTS: true #port 18983
+      #TODO only on "RT"?  Otherwise use 1 hour?
       SOLR_OPTS: "-Dsolr.autoSoftCommit.maxTime=5000"
-
+    hooks:
+      post_start:
+        # Note we have a collection replica placement rule that uses this role.
+        - name: add overseer role to first node
+          cmd: sleep 8 && wget -qO- http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=bop-solr-1.kontena.local:8983_solr
+          instances: 1
+          oneshot: true
+    depends_on:
+      - zookeeper
     deploy:
       wait_for_port: 8983
-    stateful: true
+    instances: 3 #TODO 5
     affinity:
-      - node==bop-solr1.novalocal
+      # %%i is instance id
+      - node==bop-solr-%%i.novalocal
+    stateful: true
+    volumes:
+      - /opt/solr/server/solr/
 
   webservice:
     image: harvardcga/bop-webservice
@@ -34,9 +70,11 @@ services:
     external_links:
       - loadbalancer-loadbalancer
     environment:
+      # see bop-ws.yml
       #dw.logging.level: DEBUG
-      SOLR_HOST: ${project}-solr
+      SOLR_HOST: ${project}-solr-1
       SOLR_PORT: 8983
+      solrCollection: bop
       JMX:
         -Dcom.sun.management.jmxremote=true
         -Dcom.sun.management.jmxremote.authenticate=false
@@ -51,6 +89,8 @@ services:
       KONTENA_LB_KEEP_VIRTUAL_PATH: true
     deploy:
       wait_for_port: 8080
+    affinity:
+      - node==bop-solr-1.novalocal
 
   ingest:
     image: harvardcga/bop-ingest
@@ -63,10 +103,10 @@ services:
       - solr
     external_links:
       - kafka-kafka
-      - kafka-zookeeper1
+      - kafka-zookeeper
     environment:
       dw.kafkaConsumer.bootstrap-servers: kafka-kafka:9092
-      dw.kafkaConsumer.zookeeper-connect: kafka-zookeeper1:2181,kafka-zookeeper2:2181,kafka-zookeeper3:2181
+      dw.kafkaConsumer.zookeeper-connect: kafka-zookeeper-1:2181,kafka-zookeeper-2:2181,kafka-zookeeper-3:2181
       dw.solrConnectionString: http://${project}-solr-1:8983/solr/
       JMX:
         -Dcom.sun.management.jmxremote=true
@@ -78,4 +118,4 @@ services:
         -Djava.rmi.server.hostname=${project}-ingest.kontena.local
       JAVA_OPTS: -XX:NewRatio=1
     affinity:
-      - node==bop-solr1.novalocal
+      - node==bop-solr-1.novalocal
