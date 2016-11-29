@@ -47,7 +47,11 @@ class Ingest(mainArgs: Array<String>) :
 
     val kafkaConsumer = KafkaConsumer(dwConfig.kafkaConsumerConfig,
             LongDeserializer(), JsonSerde().deserializer())
-    addCloseHook(kafkaConsumer)
+    addCloseHook({-> try {
+      kafkaConsumer.close()
+    } catch (e: ConcurrentModificationException) {
+      log.warn("Can't close KafkaConsumer. Expected when JVM is SIGTERM'ed.")
+    }})
 
 
     kafkaConsumer.subscribe(Collections.singleton(dwConfig.kafkaSourceTopic))
@@ -76,7 +80,7 @@ class Ingest(mainArgs: Array<String>) :
         val jsonNode = record.value()
         try {
           solrClient.add(dwConfig.solrCollection, jsonToSolrInputDoc(jsonNode as ObjectNode))
-        } catch(e: Exception) {
+        } catch (e: Exception) {
           log.error("Bad tweet format? $jsonNode")
           throw e
         }
