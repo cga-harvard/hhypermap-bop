@@ -22,6 +22,7 @@ import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.JsonSerde
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.serialization.LongDeserializer
+import org.apache.solr.common.SolrException
 import org.apache.solr.common.SolrInputDocument
 import java.time.Duration
 import java.time.Instant
@@ -82,6 +83,9 @@ class Ingest(mainArgs: Array<String>) :
           solrClient.add(dwConfig.solrCollection, jsonToSolrInputDoc(jsonNode as ObjectNode))
         } catch (e: Exception) {
           log.error("Bad tweet format? $jsonNode")
+          if (e is SolrException) {
+            log.error("SolrException metadata: {}", e.metadata )
+          }
           throw e
         }
       }

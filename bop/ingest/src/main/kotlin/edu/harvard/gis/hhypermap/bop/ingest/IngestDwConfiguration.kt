@@ -20,9 +20,12 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwConfiguration
 import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwKafkaStreamsConfiguration
 import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.solr.client.solrj.SolrRequest
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient
+import org.apache.solr.common.util.NamedList
 import org.hibernate.validator.constraints.NotEmpty
 import java.util.*
+import java.util.concurrent.atomic.AtomicReference
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Pattern
 
@@ -70,10 +73,48 @@ class IngestDwConfiguration : DwConfiguration() {
   var solrQueueSize = 100
 
   fun newSolrClient() : ConcurrentUpdateSolrClient {
-    return ConcurrentUpdateSolrClient.Builder(solrConnectionString)
-            .withThreadCount(solrThreadCount)
-            .withQueueSize(solrQueueSize)
-            .build()
+
+    return object : ConcurrentUpdateSolrClient(solrConnectionString, solrQueueSize, solrThreadCount) {
+
+      //TODO CUSC ought to do this error handling by itself
+      //   https://issues.apache.org/jira/browse/SOLR-3284
+
+      val errorRef = AtomicReference<Throwable>()
+
+      override fun handleError(ex: Throwable) {
+        if (! errorRef.compareAndSet(null, ex)) {
+          // there is an existing error yet to be reported. Just log this one.
+          super.handleError(ex) // default impl logs
+        }
+      }
+
+      override fun close() {
+        try {
+          throwIfError()
+        } finally {
+          super.close()
+        }
+      }
+
+      override fun request(request: SolrRequest<*>?, collection: String?): NamedList<Any> {
+        throwIfError()
+        return super.request(request, collection)
+      }
+
+      override fun blockUntilFinished() {
+        super.blockUntilFinished()
+        throwIfError()
+      }
+
+      private fun throwIfError() {
+        val ex = errorRef.get()
+        if (ex != null) {
+          errorRef.compareAndSet(ex, null) // set to null, only if it's the same exception
+          throw ex
+        }
+      }
+
+    }
   }
 
 
