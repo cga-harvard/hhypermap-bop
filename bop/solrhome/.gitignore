@@ -1,4 +1,5 @@
 # exclude sub-directories except "configsets"
 zoo_data/
 *_replica1/
+bop-tests/data/
 geo_admin/
