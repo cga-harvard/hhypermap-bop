@@ -16,8 +16,19 @@ faceting (what we are calling HHypermap Core) into Lucene/Solr as part of a map 
 To build the BOP, David Smiley developed many new capabilities in addition to 2D faceting:(list…), scaling it up massively to create
 a system to allow researchers to interactively query and visualize big spatio-temporal datasets.
 
+Live
+====
+
+Web-Service (Swagger generated docs):
+
+http://bop.worldmap.harvard.edu/bopws/swagger#/default
+
 Technical details
 =================
 
-TODO link to conference presentation (Lucene Solr Revolution 2016).
+Presentation: "H-Hypermap: Heatmap Analytics at Scale" (2016-10)
+slides: http://www.slideshare.net/DavidSmiley2/hhypermap-heatmap-analytics-at-scale
+video: https://www.youtube.com/watch?v=nzAH5QEl9hQ
+note: never-mind the dates :-)
+
 And more here ... TODO
