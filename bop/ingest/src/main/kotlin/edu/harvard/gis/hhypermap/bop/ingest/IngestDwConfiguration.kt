@@ -22,6 +22,7 @@ import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwKafkaStreamsConfiguratio
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.solr.client.solrj.SolrRequest
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient
+import org.apache.solr.client.solrj.request.RequestWriter
 import org.apache.solr.common.util.NamedList
 import org.hibernate.validator.constraints.NotEmpty
 import java.util.*
@@ -38,7 +39,7 @@ class IngestDwConfiguration : DwConfiguration() {
   var kafkaSourceTopic: String? = null
 
   @JsonProperty
-  val kafkaOffsetCommitIntervalMs: Long = 5000
+  val kafkaOffsetCommitIntervalMs: Long = 30000
 
   private var _kafkaConsumerConfig: MutableMap<String,Any> = mutableMapOf()
   /** governed by KafkaConsumer */
@@ -70,11 +71,19 @@ class IngestDwConfiguration : DwConfiguration() {
 
   /** Max size of pending queue before blocks. */
   @JsonProperty
-  var solrQueueSize = 100
+  var solrQueueSize = 1000
+
+  /** If this many milliseconds pass, the streamed connection to Solr will end. */
+  @JsonProperty
+  var solrPollQueueTimeMs = 1000 // SolrJ ConcurrentUpdateSolrClient defaults to 250
 
   fun newSolrClient() : ConcurrentUpdateSolrClient {
 
     return object : ConcurrentUpdateSolrClient(solrConnectionString, solrQueueSize, solrThreadCount) {
+      init {
+        setPollQueueTime(solrPollQueueTimeMs)
+//        setRequestWriter(RequestWriter()) // XML
+      }
 
       //TODO CUSC ought to do this error handling by itself
       //   https://issues.apache.org/jira/browse/SOLR-3284
@@ -116,6 +125,5 @@ class IngestDwConfiguration : DwConfiguration() {
 
     }
   }
-
 
 }

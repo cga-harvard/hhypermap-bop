@@ -22,6 +22,7 @@ import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.JsonSerde
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.serialization.LongDeserializer
+import org.apache.solr.client.solrj.request.UpdateRequest
 import org.apache.solr.common.SolrException
 import org.apache.solr.common.SolrInputDocument
 import java.time.Duration
@@ -57,18 +58,21 @@ class Ingest(mainArgs: Array<String>) :
 
     kafkaConsumer.subscribe(Collections.singleton(dwConfig.kafkaSourceTopic))
 
+    val kafkaMinPollTime: Long = 1500 // if poll too short, sometimes get no records
+    var nextCommitTimeMs = -1L
     // this approach measures durations accurately; it's not to actually denote current time
     fun currentTimeMs() = TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
+    fun timeToCommit() = currentTimeMs() > nextCommitTimeMs - 1000 // let commit a little sooner
 
     // note: we commit offsets to Kafka after a configured time threshold passes since the most
     //   recent non-committed record is returned from poll.
-    var nextCommitTimeMs = -1L
     while (true) {
       // calc how long poll() can take
       val pollTimeoutMs = if (nextCommitTimeMs == -1L)
         Long.MAX_VALUE // forever
-      else
-        Math.max(0, nextCommitTimeMs - currentTimeMs()) // until next commit time
+      else {
+        Math.max(kafkaMinPollTime, nextCommitTimeMs - currentTimeMs())
+      } // until next commit time
       val records = kafkaConsumer.poll(pollTimeoutMs)
 
       // calc next commit time if it's not set and we have records
@@ -77,10 +81,19 @@ class Ingest(mainArgs: Array<String>) :
       }
 
       // convert records to Solr docs and send to Solr asynchronously
-      for (record in records) { // usually one per Kafka partition/topic
+      log.debug("Kafka poll record count: " + records.count())
+      val recordIterator = records.iterator()
+      while (recordIterator.hasNext()) {
+        val record = recordIterator.next()
         val jsonNode = record.value()
         try {
-          solrClient.add(dwConfig.solrCollection, jsonToSolrInputDoc(jsonNode as ObjectNode))
+          val req = UpdateRequest().apply {
+            add(jsonToSolrInputDoc(jsonNode as ObjectNode))
+            if (!recordIterator.hasNext() && timeToCommit()) {
+              lastDocInBatch() // perf hint to stream smoother
+            }
+          }
+          solrClient.request(req, dwConfig.solrCollection)
         } catch (e: Exception) {
           log.error("Bad tweet format? $jsonNode")
           if (e is SolrException) {
@@ -91,9 +104,10 @@ class Ingest(mainArgs: Array<String>) :
       }
 
       // maybe commit offsets
-      if (currentTimeMs() >= nextCommitTimeMs) {
-        log.debug("Flushing queue to Solr then committing Kafka offsets")
+      if (timeToCommit()) {
+        log.debug("Flushing queue to Solr")
         solrClient.blockUntilFinished() // unique method of ConcurrentUpdateSolrClient
+        log.debug("Kafka commitSync()")
         kafkaConsumer.commitSync()
         nextCommitTimeMs = -1L
       }
