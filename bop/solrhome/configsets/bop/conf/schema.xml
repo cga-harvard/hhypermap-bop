@@ -84,9 +84,11 @@
   <field name="coord" type="geo_latlontype" indexed="false" stored="true"/>
 
   <!-- we use spatial RPT for filtering and for heatmaps -->
-  <!--    TODO project this into web-mercator, use quad tree (square cells) -->
   <field name="coord_rpt" type="geo_rpt_5m"         indexed="true" stored="false"/>
   <copyField source="coord" dest="coord_rpt" />
+
+  <field name="coordSentimentPos_rpt" type="geo_rpt_5m" indexed="true" stored="false"/>
+  <!-- URP conditionally copies coord to coordSentimentPos_rpt when sentiment_pos is true -->
 
   <field name="geoadmin_admin2" type="hierarchy" indexed="true" stored="true" docValues="false" />
   <field name="geoadmin_admin2_txt" type="hierarchy" indexed="true" stored="true" docValues="false" />

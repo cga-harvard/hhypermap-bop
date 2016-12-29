@@ -191,6 +191,7 @@
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler">
     <lst name="defaults">
+      <str name="processor">bopUrpScript</str><!-- this urp runs first -->
       <str name="update.chain">${solr.update.chain:dateSharded}</str>
 
       <!-- config for DateShardingURPFactory: -->
@@ -215,6 +216,15 @@
     <!-- DWS: TOO noisy <processor class="solr.LogUpdateProcessorFactory" />-->
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
+
+  <updateProcessor name="bopUrpScript" class="solr.StatelessScriptUpdateProcessorFactory">
+    <str name="script">update-script.js</str>
+    <lst name="params">
+      <str name="conditionField">sentiment_pos</str>
+      <str name="sourceCopyField">coord</str>
+      <str name="destCopyField">coordSentimentPos_rpt</str>
+    </lst>
+  </updateProcessor>
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Query section - these settings control query time things like caches
