@@ -17,6 +17,8 @@
 package edu.harvard.gis.hhypermap.bopws
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.ObjectNode
 import io.dropwizard.testing.junit.ResourceTestRule
 import org.apache.solr.client.solrj.impl.HttpSolrClient
 import org.apache.solr.common.SolrInputDocument
@@ -44,9 +46,9 @@ class SearchWebServiceTest {
 
     @JvmStatic @BeforeClass fun beforeClass() {
       solrClient.add(listOf(
-              doc("2015-04-01T12:00:00Z", "41.5,-70", "Apple fruit", "Alex"),
-              doc("2015-04-02T12:00:00Z", "42.5,-70", "Orange fruit fruit fruit", "Otto"),
-              doc("2015-04-03T12:00:00Z", "43.5,-70", "Lemon fruit", "Luke")
+              doc("2015-04-01T12:00:00Z", "41.5,-70", "Apple fruit", "Alex", true),
+              doc("2015-04-02T12:00:00Z", "42.5,-70", "Orange fruit fruit fruit", "Otto", false), // neg
+              doc("2015-04-03T12:00:00Z", "43.5,-70", "Lemon fruit", "Luke", true)
       ))
       solrClient.commit()
     }
@@ -57,13 +59,14 @@ class SearchWebServiceTest {
       solrClient.close()
     }
 
-    fun doc(created_at: String, coordLatLon: String, text: String, userName: String): SolrInputDocument =
+    fun doc(created_at: String, coordLatLon: String, text: String, userName: String, posSent: Boolean): SolrInputDocument =
             SolrInputDocument().apply {
               setField("text", text)
               setField("created_at", created_at.toString())
               setField("coord", coordLatLon)
               setField("user_name", userName)
               setField("id", Instant.parse(created_at).toEpochMilli()) // good enough
+              setField("sentiment_pos", posSent)
             }
   }
 
@@ -194,6 +197,12 @@ class SearchWebServiceTest {
       // some sub-cells may get filtered out.
       assert(numCells >= 2*firstCells && numCells <= 4*firstCells, {"numCells: $numCells"})
     }
+
+    val jsonRsp = reqJson(uri.queryParam("a.hm.posSent", "true"))
+    fun sum2dJsonArray(counts2d: ArrayNode): Int =
+      counts2d.sumBy { row -> (row as? ArrayNode)?.sumBy { it.asInt() } ?: 0 } // note: sometimes NullNode (not ArrayNode)
+    assertEquals(3, sum2dJsonArray(jsonRsp["a.hm"]["counts_ints2D"] as ArrayNode))
+    assertEquals(2, sum2dJsonArray(jsonRsp["a.hm.posSent"]["counts_ints2D"] as ArrayNode))
   }
 
   // MISC
@@ -255,6 +264,15 @@ class SearchWebServiceTest {
       assertFalse(json.hasNonNull("a.time"))
     }
     assertEquals(queryParams["a.hm.limit"] != null, json.hasNonNull("a.hm"))
+    assertEquals(queryParams["a.hm.posSent"] != null, json.hasNonNull("a.hm.posSent"))
+    if (queryParams["a.hm.posSent"] == "true") {
+      // same metadata except counts
+      val aHmNoCounts = json["a.hm"].deepCopy<JsonNode>() as ObjectNode
+      aHmNoCounts.remove("counts_ints2D")
+      val aHmPosNoCounts = json["a.hm.posSent"].deepCopy<JsonNode>() as ObjectNode
+      aHmPosNoCounts.remove("counts_ints2D")
+      assertEquals(aHmNoCounts, aHmPosNoCounts) // metadata should be the same
+    }
     assertEquals(queryParams["a.text.limit"] != null, json.hasNonNull("a.text"))
   }
 

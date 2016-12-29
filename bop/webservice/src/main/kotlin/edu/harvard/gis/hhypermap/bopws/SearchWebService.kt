@@ -56,6 +56,7 @@ private val TIME_FILTER_FIELD = "created_at"
 private val TIME_SORT_FIELD = "id" // re-use 'id' which is a tweet id which is timestamp based
 private val GEO_FILTER_FIELD = "coord_rpt"
 private val GEO_HEATMAP_FIELD = "coord_rpt" // and assume units="degrees" here
+private val GEO_POS_SENT_HEATMAP_FIELD = "coordSentimentPos_rpt"
 private val GEO_SORT_FIELD = "coord" // and assume units="kilometers" here
 private val TEXT_FIELD = "text"
 private val USER_FIELD = "user_name"
@@ -200,6 +201,10 @@ class SearchWebService(
                   " world.")
           aHmFilter: String?,
 
+          @QueryParam("a.hm.posSent") @DefaultValue("false")
+          @ApiParam("If true, an additional heatmap grid is returned for positive sentiment tweets")
+          aHmPosSent: Boolean,
+
           @QueryParam("a.text.limit") @DefaultValue("0") @Min(0) @Max(1000)
           @ApiParam("Returns the most frequently occurring words.  WARNING: There is usually a" +
                   " significant performance hit in this due to the extremely high cardinality.")
@@ -231,7 +236,7 @@ class SearchWebService(
 
     // a.hm
     if (aHmLimit > 0) {
-      requestHeatmapFacet(aHmLimit, aHmFilter ?: qConstraints.qGeo, aHmGridLevel, solrQuery)
+      requestHeatmapFacet(aHmLimit, aHmFilter ?: qConstraints.qGeo, aHmGridLevel, aHmPosSent, solrQuery)
     }
 
     // a.text
@@ -263,7 +268,8 @@ class SearchWebService(
             // if didn't ask for docs, we return no list at all
             dDocs = if (solrQuery.rows > 0) solrResp.results.map { docToMap(it) } else null,
             aTime = SearchResponse.TimeFacet.fromSolr(solrResp),
-            aHm = SearchResponse.HeatmapFacet.fromSolr(solrResp),
+            aHm = SearchResponse.HeatmapFacet.fromSolr(solrResp, GEO_HEATMAP_FIELD),
+            aHmPosSent = SearchResponse.HeatmapFacet.fromSolr(solrResp, GEO_POS_SENT_HEATMAP_FIELD),
             aText = SearchResponse.fieldValsFacetFromSolr(solrResp, TEXT_FIELD),
             aUser = SearchResponse.fieldValsFacetFromSolr(solrResp, USER_FIELD),
             timing = SearchResponse.getTimingFromSolr(solrResp)
@@ -330,9 +336,14 @@ class SearchWebService(
     }
   }
 
-  private fun requestHeatmapFacet(aHmLimit: Int, aHmFilter: String?, aHmGridLevel: Int?, solrQuery: SolrQuery) {
+  private fun requestHeatmapFacet(aHmLimit: Int, aHmFilter: String?, aHmGridLevel: Int?,
+                                  aHmPosSent: Boolean, solrQuery: SolrQuery) {
     solrQuery.setFacet(true)
     solrQuery.set("facet.heatmap", "{!ex=$GEO_FILTER_FIELD}$GEO_HEATMAP_FIELD")
+    if (aHmPosSent) {
+      solrQuery.add("facet.heatmap", "{!ex=$GEO_FILTER_FIELD}$GEO_POS_SENT_HEATMAP_FIELD")
+      // note: all options below apply to both heatmaps
+    }
     val hmRectStr = aHmFilter ?: "[-90,-180 TO 90,180]"
     solrQuery.set("facet.heatmap.geom", hmRectStr)
     if (aHmGridLevel != null) {
@@ -384,12 +395,13 @@ class SearchWebService(
 
   private fun solrIdToTweetId(value: Any): String = (value as Long).toString()
 
-  @JsonPropertyOrder("a.matchDocs", "d.docs", "a.time", "a.hm", "a.user", "a.text", "timing")
+  @JsonPropertyOrder("a.matchDocs", "d.docs", "a.time", "a.hm", "a.hm.posSent", "a.user", "a.text", "timing")
   data class SearchResponse (
           @get:JsonProperty("a.matchDocs") val aMatchDocs: Long,
           @get:JsonProperty("d.docs") val dDocs: List<Map<String,Any>>?,
           @get:JsonProperty("a.time") val aTime: TimeFacet?,
           @get:JsonProperty("a.hm") val aHm: HeatmapFacet?,
+          @get:JsonProperty("a.hm.posSent") val aHmPosSent: HeatmapFacet?,
           @get:JsonProperty("a.user") val aUser: List<FacetValue>?,
           @get:JsonProperty("a.text") val aText: List<FacetValue>?,
           @get:JsonProperty("timing") val timing: Timing
@@ -456,9 +468,9 @@ class SearchWebService(
     ) {
         companion object {
           @Suppress("UNCHECKED_CAST")
-          fun fromSolr(solrResp: QueryResponse): HeatmapFacet? {
+          fun fromSolr(solrResp: QueryResponse, fieldName: String): HeatmapFacet? {
             val hmNl = solrResp.response
-                    .findRecursive("facet_counts", "facet_heatmaps", GEO_HEATMAP_FIELD) as NamedList<Any>?
+                    .findRecursive("facet_counts", "facet_heatmaps", fieldName) as NamedList<Any>?
                     ?: return null
             // TODO consider doing this via a reflection utility; must it be Kotlin specific?
             return HeatmapFacet(gridLevel = hmNl.get("gridLevel") as Int,
