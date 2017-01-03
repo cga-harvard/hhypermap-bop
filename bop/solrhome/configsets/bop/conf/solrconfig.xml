@@ -13,6 +13,10 @@
        have your own custom plugins.
     -->
 
+  <!-- BOP: has ICU -->
+  <lib dir="${solr.install.dir}/contrib/analysis-extras/lib/" />
+  <lib dir="${solr.install.dir}/contrib/analysis-extras/lucene-libs/" />
+
   <!-- Controls what version of Lucene various components of Solr
        adhere to.  Generally, you want to use the latest version to
        get all bug fixes and improvements. It is highly recommended
