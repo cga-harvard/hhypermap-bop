@@ -29,11 +29,11 @@ echo "===> Configuring ..."
 
 echo "Harvard CGA intercept for Kontena"
 
-if [ "${KONTENA_SERVICE_INSTANCE_NUMBER:+x}" != "x"] && [ "${KAFKA_BROKER_ID:+x}" = "x" ]; then
+if [ "${KONTENA_SERVICE_INSTANCE_NUMBER:=x}" != "x" ] && [ "${KAFKA_BROKER_ID:=x}" == "x" ]; then
   export KAFKA_BROKER_ID="$KONTENA_SERVICE_INSTANCE_NUMBER"
 fi
-if [ "${KONTENA_SERVICE_NAME:+x}" != "x"] && [ "${KAFKA_ADVERTISED_HOST:+x}" = "x" ]; then
-	export KAFKA_ADVERTISED_HOST="PLAINTEXT://${HOSTNAME}:9092"
+if [ "${KONTENA_SERVICE_NAME:=x}" != "x" ] && [ "${KAFKA_ADVERTISED_LISTENERS:=x}" == "x" ]; then
+	export KAFKA_ADVERTISED_LISTENERS="PLAINTEXT://${HOSTNAME}:9092"
 fi
 
 /etc/confluent/docker/configure
