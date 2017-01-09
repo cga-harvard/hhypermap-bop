@@ -25,38 +25,29 @@ services:
       ZOO_SERVERS: server.1=${project}-zookeeper-1:2888:3888 server.2=${project}-zookeeper-2:2888:3888 server.3=${project}-zookeeper-3:2888:3888
       ZOO_AUTOPURGE_PURGE_INTERVAL: 24
 
-  #TODO HA configuration. See https://github.com/confluentinc/cp-docker-images/blob/master/examples/kafka-cluster/docker-compose.yml
   kafka:
-    extends:
-      file: docker-compose.yml
-      service: kafka
+    image: harvardcga/cp-kafka:3.0.1-hcga2
+    build:
+      context: "."
+      dockerfile: kafka.Dockerfile
+    depends_on:
+      - zookeeper
     stateful: true
+    instances: 2
     deploy:
       wait_for_port: 9092
     affinity:
-      - node==kafka1.novalocal
+      # %%i is instance id
+      - node==kafka%%i.novalocal
     volumes:
       - /media/attached/kafka/data:/var/lib/kafka/data
     environment:
-      KAFKA_BROKER_ID: 1
+      #KAFKA_BROKER_ID: 1
+      #KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${project}-kafka-1.kontena.local:9092
       KAFKA_ZOOKEEPER_CONNECT: ${project}-zookeeper-1:2181,${project}-zookeeper-2:2181,${project}-zookeeper-3:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${project}-kafka-1.kontena.local:9092
       KAFKA_DELETE_TOPIC_ENABLE: true
       KAFKA_JMX_PORT: 9999
-      KAFKA_JMX_HOSTNAME: ${project}-kafka-1.kontena.local
 
-  kafka2:
-    extends:
-      service: kafka
-    affinity:
-      - node==kafka2.novalocal
-    environment:
-      KAFKA_BROKER_ID: 2
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${project}-kafka-2.kontena.local:9092
-      KAFKA_JMX_HOSTNAME: ${project}-kafka-2.kontena.local
-      
-
-      
   kafka-manager:
     image: harvardcga/kafka-manager
     build:
@@ -83,6 +74,3 @@ services:
       - secret: KAFKA_MANAGER_PASSWORD
         name: KM_PASSWORD
         type: env
-
-#TODO 3 zk services
-#TODO 2 kafka services

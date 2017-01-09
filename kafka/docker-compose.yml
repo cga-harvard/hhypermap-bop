@@ -15,11 +15,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
 
   kafka:
-    image: harvardcga/cp-kafka:3.0.1
-    # customized to fix: https://github.com/confluentinc/cp-docker-images/pull/141
-    build:
-      context: "."
-      dockerfile: kafka.Dockerfile
+    image: confluentinc/cp-kafka:3.0.1
     depends_on:
       - zookeeper
     ports:
