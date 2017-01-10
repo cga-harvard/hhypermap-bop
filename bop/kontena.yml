@@ -72,8 +72,7 @@ services:
     environment:
       # see bop-ws.yml
       #dw.logging.level: DEBUG
-      SOLR_HOST: ${project}-solr-1
-      SOLR_PORT: 8983
+      dw.solrUrl: http://${project}-solr-3:8983/solr
       dw.solrCollection: bop
       dw.server.applicationContextPath: /bopws
       JMX:
@@ -83,14 +82,14 @@ services:
         -Dcom.sun.management.jmxremote.local.only=false
         -Dcom.sun.management.jmxremote.rmi.port=9999
         -Dcom.sun.management.jmxremote.port=9999
-      JAVA_OPTS: -Xmx750M
+      JAVA_OPTS: -Xmx512M
       KONTENA_LB_INTERNAL_PORT: 8080
       KONTENA_LB_VIRTUAL_PATH: /bopws
       KONTENA_LB_KEEP_VIRTUAL_PATH: true
     deploy:
       wait_for_port: 8080
     affinity:
-      - node==bop-solr-1.novalocal
+      - node==bop-solr-3.novalocal
 
   ingest:
     image: harvardcga/bop-ingest

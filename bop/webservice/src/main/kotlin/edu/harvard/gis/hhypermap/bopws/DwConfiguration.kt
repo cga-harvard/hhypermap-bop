@@ -50,7 +50,7 @@ class DwConfiguration : Configuration() {
   //TODO could use a factory approach; see Configuration.DefaultServerFactory
 
   @JsonProperty
-  var solrZkHost: String? = null
+  var solrZkHost: String? = null // single zk host:port
 
   /** For experimental purposes. Mutually exclusive with solrZkHost. */
   @JsonProperty
@@ -68,7 +68,7 @@ class DwConfiguration : Configuration() {
         defaultCollection = solrCollection
       }
     } else {
-      var url = solrUrl
+      var url = solrUrl ?: "http://localhost:8983/solr"
       if (solrCollection != null)
         url += "/$solrCollection"
       return HttpSolrClient.Builder(url).build()

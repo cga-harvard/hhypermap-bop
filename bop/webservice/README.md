@@ -12,7 +12,7 @@ collection. TODO automate that setup better.  To set that up locally,
 execute the following:
 
     $ docker run --rm -p 8983:8983 -v "$(pwd)/../solrhome/:/opt/solr/server/solr" \
-        harvardcga/solr -f
+        harvardcga/solr
 
 Docker Instructions
 ===================

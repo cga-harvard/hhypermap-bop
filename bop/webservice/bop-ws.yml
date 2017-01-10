@@ -2,7 +2,7 @@
 # And we've customized DW to allow environment variables to do the same.
 
 #solrZkHost: localhost:9983
-solrUrl: http://${SOLR_HOST:-localhost}:${SOLR_PORT:-8983}/solr
+#solrUrl: http://${SOLR_HOST:-localhost}:${SOLR_PORT:-8983}/solr
 solrCollection: bop
 
 #  REFERENCE: http://www.dropwizard.io/1.0.0/docs/manual/configuration.html
