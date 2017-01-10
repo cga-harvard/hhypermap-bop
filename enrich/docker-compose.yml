@@ -6,8 +6,8 @@ services:
     build: .
     image: harvardcga/tweet-enrich
     environment:
-      dw.kafkaSourceTopic: CGATweets
-      dw.kafkaDestTopic: tweets-enriched
+      dw.kafkaSourceTopic: CGATweets2
+      dw.kafkaDestTopic: tweets-enriched2
       # use a hyphen for keys beneath "kafkaStreams"
       #dw.kafkaStreams.application-id: enrich
       dw.kafkaStreams.bootstrap-servers: ${HOST_IP}:9092
