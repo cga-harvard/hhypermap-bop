@@ -46,6 +46,8 @@ services:
       #KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${project}-kafka-1.kontena.local:9092
       KAFKA_ZOOKEEPER_CONNECT: ${project}-zookeeper-1:2181,${project}-zookeeper-2:2181,${project}-zookeeper-3:2181
       KAFKA_DELETE_TOPIC_ENABLE: true
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+      KAFKA_COMPRESSION_TYPE: lz4
       KAFKA_JMX_PORT: 9999
 
   kafka-manager:
