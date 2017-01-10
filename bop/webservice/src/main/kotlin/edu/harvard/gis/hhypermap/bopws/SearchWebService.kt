@@ -416,20 +416,30 @@ class SearchWebService(
       @Suppress("UNCHECKED_CAST")
       fun getTimingFromSolr(solrResp: QueryResponse): Timing {
         val tree = convertSolrTimingTree("QTime", solrResp.debugMap["timing"] as NamedList<Any>)
+        // I don't understand why the different QTime's vary
         if (tree != null && Math.abs(solrResp.qTime.toLong() - tree.millis) > 5) {
-          log.warn("QTime != debug.timing.time: ${solrResp.qTime.toLong() - tree.millis}")
+          log.debug("QTime != debug.timing.time: ${solrResp.qTime} ${tree.millis}")
         }
         return Timing("callSolr.elapsed", solrResp.elapsedTime, listOfNotNull(tree));
       }
 
       @Suppress("UNCHECKED_CAST")
-      private fun convertSolrTimingTree(label: String, namedList: NamedList<Any>): Timing? {
-        val millis = (namedList.remove("time") as Double).toLong() // note we remove it
-        if (millis == 0L) { // avoid verbosity; lots of 0's is typical
-          return null;
+      private fun convertSolrTimingTree(label: String, namedListOrLong: Any): Timing? {
+        if (namedListOrLong is NamedList<*>) {
+          val namedList = namedListOrLong
+          val millis = (namedList.remove("time") as Double).toLong() // note we remove it
+          if (millis == 0L) { // avoid verbosity; lots of 0's is typical
+            return null
+          }
+          val subs = namedList.map { convertSolrTimingTree(it.key, it.value) }
+          return Timing(label, millis, subs.filterNotNull())
+        } else if (namedListOrLong is Long) { // atypical
+          val millis = namedListOrLong
+          return if (millis != 0L) { Timing(label, millis) } else null
+        } else {
+          log.warn("Unexpected timing for label $label: $namedListOrLong")
+          return null
         }
-        val subs = namedList.map { convertSolrTimingTree(it.key, it.value as NamedList<Any>) }
-        return Timing(label, millis, subs.filterNotNull())
       }
     }
 
