@@ -105,8 +105,9 @@ services:
       - kafka-zookeeper
     environment:
       # see dw.yml
+      dw.kafkaSourceTopic: tweets-enriched2
       dw.kafkaConsumer.auto-offset-reset: earliest
-      dw.kafkaConsumer.bootstrap-servers: kafka-kafka:9092
+      dw.kafkaConsumer.bootstrap-servers: kafka-kafka-1:9092,kafka-kafka-2:9092
       dw.kafkaConsumer.zookeeper-connect: kafka-zookeeper-1:2181,kafka-zookeeper-2:2181,kafka-zookeeper-3:2181
       dw.kafkaConsumer.group-id: bop-ingest-bopcollection
       # We send to the node containing "RT" (most likely where needed, and kinda needed for our date URP)
