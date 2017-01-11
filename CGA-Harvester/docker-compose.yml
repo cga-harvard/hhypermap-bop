@@ -1,0 +1,68 @@
+zookeeper:
+  image: oddpoet/zookeeper
+  hostname: zookeeper
+  command:
+    - "2181"
+  ports:
+    - "2181:2181"
+kafka:
+  image: wurstmeister/kafka
+  hostname: kafka
+  ports:
+    - "9092:9092"
+  links: 
+    - zookeeper:zk
+  environment:
+    KAFKA_ADVERTISED_PORT: 9092
+service:
+  build: ./
+  links:
+    - kafka
+  environment:
+    KAFKA_HOST_PORT: kafka:9092
+    COMPRESSION_TYPE: lz4
+    ACKS: 1
+    RETRIES: 30
+    LINGER_MS: 100
+    RETRY_BACKOFF_MS: 1000
+    TWEET_TOPIC: CGATweets
+    APP_PARAMS_NAME: Twerld
+    APP_PARAMS_KEY: rIg8zjOpPcvGgWbteJYQ
+    APP_PARAMS_SECRET: nXXc7wLxH7ONCNFEDrpNW7T0qGMkpUQfoLUXNhG1to
+    USER_1: databases4life
+    USER_2: gamalabdalwahid
+    USER_3: Velos_MapD
+    USER_4: kedahek
+    USER_5: tmostak
+    OAUTH_TOKEN_USER_1: 1173337286-rhxiLu2YWTmWuKrlwYL6qcBvO5pReLzxli3gfGS
+    OAUTH_SECRET_USER_1: cuTom9AH4rEaYG2QdYN202LBhjzHe5Ex9F29cizzQ
+    OAUTH_TOKEN_USER_2: 568766576-9OeLy4k31jH0xGsq9FtnvGYZZBnZUs7oDxTLoQIm
+    OAUTH_SECRET_USER_2: 3XrsGv3OYkwhaoy2co77B4Xk5Dk7gVN0DUWACRmPBY
+    OAUTH_TOKEN_USER_3: 964655989-DFtRLIqlYtjLIGoolNjLptmpMgTUCkU1u6eUaqBN
+    OAUTH_SECRET_USER_3: 6tR1iOZNUMVyMZdB7AmJ2EswtXapwkN0sI5PkbiYzA
+    OAUTH_TOKEN_USER_4: 561011150-yKMTb56Gbj1oR5kiRoEM7ZWOv2ScZP8RL3kGZxRl
+    OAUTH_SECRET_USER_4: Dw7MVHD4v4P0Kts1lbwWvv7AAZin7XJEctHcKJ08k
+    OAUTH_TOKEN_USER_5: 1173286686-4xkTwHF3FvnSKGTQHOjhuP1spmZBx1ot7y639oI
+    OAUTH_SECRET_USER_5: zou9RZIidZpZ2Y3Rgbac4Ockc8cIrMPyF3ROUBiCetk
+    BOUNDING_BOX_1: NWW,databases4life,-180,15,-92,90
+    BOUNDING_BOX_2: NWE,gamalabdalwahid,-92,15,-30,90
+    BOUNDING_BOX_3: SW,Velos_MapD,-180,-90,-30,15
+    BOUNDING_BOX_4: EW,kedahek,-30,-90,60,90
+    BOUNDING_BOX_5: EE,tmostak,60,-90,180,90
+
+    
+  
+
+    
+ 
+    
+     
+
+
+  
+  
+  
+  
+
+  
+  
