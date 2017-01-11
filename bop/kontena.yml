@@ -35,20 +35,26 @@ services:
     environment:
       SOLR_HEAP: 4G
       ENABLE_REMOTE_JMX_OPTS: true #port 18983
-      #TODO only on "RT"?  Otherwise use 1 hour?
-      SOLR_OPTS: "-Dsolr.autoSoftCommit.maxTime=5000"
-    hooks:
-      post_start:
-        # Note we have a collection replica placement rule that uses this role.
-        - name: add overseer role to first node
-          cmd: sleep 8 && wget -qO- http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=bop-solr-1.kontena.local:8983_solr
-          instances: 1
-          oneshot: true
+      #TODO softcommit: only on "RT"?  Otherwise use 1 hour?
+      # poll-queue-time: SOLR-7333 default is 25ms but way too small IMO.
+      SOLR_OPTS:
+        -Dsolr.autoSoftCommit.maxTime=5000
+        -Dsolr.cloud.replication.poll-queue-time-ms=1000
+        -Dsolr.cloud.replication.runners=2
+#    hooks:
+#      post_start:
+#        # Note we have a collection replica placement rule that uses this role.
+#        - name: add overseer role to first node
+#          cmd: sleep 8 && wget -qO- 'http://localhost:8983/solr/admin/collections?action=ADDROLE\&role=overseer\&node=bop-solr-1.kontena.local:8983_solr'
+#          instances: 1
+#          oneshot: true
+      #TODO log WARN org.apache.solr.core.SolrCore.Request  ?
     depends_on:
       - zookeeper
     deploy:
       wait_for_port: 8983
-    instances: 3 #TODO 5
+      min_health: 0.0
+    instances: 4 #TODO 5
     affinity:
       # %%i is instance id
       - node==bop-solr-%%i.novalocal
