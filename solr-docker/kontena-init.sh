@@ -9,4 +9,6 @@
 #
 # $HOSTNAME works in Kontena as well as in many other environments.
 # e.g. bop-solr-1.kontena.local
-export SOLR_HOST=$HOSTNAME
+if [ "${SOLR_HOST:-}" = "" ]; then
+  export SOLR_HOST=$HOSTNAME
+fi
