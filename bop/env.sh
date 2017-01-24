@@ -7,9 +7,11 @@ case "$BOP_ENV" in
   "Kontena" ) # Kontena, VPN'ed to MOC
     ZK_HOST=bop-zookeeper:2181
     SOLR_URL_COLL=http://bop-solr:8983/solr/bop
-    COLLECTION_OPTS=(-F maxShardsPerNode=4 \
-      -F rule=shard:RT,replica:1,role:overseer \
-      -F rule=shard:!RT,replica:1,role:!overseer~)
+    COLLECTION_OPTS=(-F maxShardsPerNode=4
+      -F createNodeSet=bop-solr-1.kontena.local:8983_solr)
+#    COLLECTION_OPTS=(-F maxShardsPerNode=4 \
+#      -F rule=shard:RT,replica:1,role:overseer \
+#      -F rule=shard:!RT,replica:1,role:!overseer~)
     ;;
   "local" )
     ZK_HOST=localhost:9983
