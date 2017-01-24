@@ -5,6 +5,7 @@ Overview
 Geo enrichment (aka the "geo stamper"), is a process in which we query geo datasets by a lat & lon
 point from the tweet to find out which admin/political polygonal boundaries the point is within.
 The spatial query will retrieve some metadata and we copy that into the Tweet/record.
+This can be called [Reverse Geocoding](https://en.m.wikipedia.org/wiki/Reverse_geocoding).
 
 There are several geo datasets (each comprised of polygons) covering admin/political regions like
 countries, and states.  The data sets we have are listed further below.  We load each of these into 
