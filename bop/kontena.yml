@@ -14,8 +14,6 @@ services:
       ZOO_AUTOPURGE_PURGE_INTERVAL: 24
     deploy:
       wait_for_port: 2181
-      # Kontena doesn't start zk properly without this:
-      min_health: 0.0
     instances: 3
     affinity:
       # Run Zookeeper on the first three Solr nodes (same host as Solr).
