@@ -4,7 +4,7 @@ services:
 
   enrich:
     build: .
-    image: harvardcga/tweet-enrich
+    image: harvardcga/tweet-enrich:0.2
     environment:
       dw.kafkaSourceTopic: CGATweets2
       dw.kafkaDestTopic: tweets-enriched2

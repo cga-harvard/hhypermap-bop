@@ -30,10 +30,12 @@ import org.apache.kafka.common.serialization.LongSerializer
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.StreamsConfig
+import org.apache.kafka.streams.processor.StreamPartitioner
 import org.junit.After
 import org.junit.Test
 import java.io.File
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.test.assertEquals
@@ -66,11 +68,13 @@ class IntegrationTest {
         dwConfig.kafkaDestTopic = "etl-integrationTest-out$kafkaSuffix"
         dwConfig.kafkaStreamsConfig[StreamsConfig.APPLICATION_ID_CONFIG] = "etl-integrationTest-streams$kafkaSuffix"
         dwConfig.kafkaStreamsConfig[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest" // important for test
+        // note: you can set sentimentServer to null to not do; it seems to be flakey
         dwConfig.sentimentServer = dwConfig.sentimentServer!!.replace("localhost", "enrich-sent-server.kontena.local")
         dwConfig.geoAdminSolrConnectionString = "http://geoadmin-solr.kontena.local:8983/solr/"
         return dwConfig
       }
     }
+    testPartitioner(enrich.DATE_PARTITIONER)
 
     val defProperties = Properties() // for write & read to Kafka in this test
     for (prop in listOf(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)) {
@@ -136,6 +140,25 @@ class IntegrationTest {
             resultRecord.get("hcga_geoadmin_us_census_tract").toString())
     assertEquals("""[{"block":"250173101003000","townName":"Lowell"}]""",
             resultRecord.get("hcga_geoadmin_us_ma_census_block").toString())
+  }
+
+  fun testPartitioner(partitioner : StreamPartitioner<Long?, ObjectNode>) {
+    fun tweetJson(dt : LocalDateTime): String {
+      return """{"timestamp_ms": "${dt.toEpochSecond(ZoneOffset.UTC) * 1000L}"}"""
+    }
+    fun partition(numPartitions : Int, jsonString : String): Int
+            = partitioner.partition(0L, jsonStrToTreeNode(jsonString) as ObjectNode?, numPartitions)
+    // way too early; always 1
+    assertEquals(1,  partition(25, tweetJson(LocalDateTime.of(2000, 2, 20, 0, 0, 0))))
+    // 2012-10 will be partition 1
+    assertEquals(1,  partition(25, tweetJson(LocalDateTime.of(2012, 10, 20, 0, 0, 0))))
+    assertEquals(2,  partition(25, tweetJson(LocalDateTime.of(2012, 11, 20, 0, 0, 0))))
+    // almost too far into the future (last partition
+    assertEquals(52, partition(53, tweetJson(LocalDateTime.of(2017, 1, 20, 0, 0, 0))))
+    // too far into the future
+    assertEquals(0,  partition(53, tweetJson(LocalDateTime.of(2017, 2, 20, 0, 0, 0))))
+    // invalid
+    assertEquals(0,  partition(25, """{"notimestamp": "foo"}"""))
   }
 
   private fun jsonStrToTreeNode(jsonString: String): TreeNode = ObjectMapper().readTree(jsonString)

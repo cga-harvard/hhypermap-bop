@@ -24,11 +24,15 @@ import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.KStreamBuilder
 import org.apache.kafka.streams.kstream.ValueMapper
+import org.apache.kafka.streams.processor.StreamPartitioner
 import org.apache.lucene.document.StoredField
 import org.apache.solr.client.solrj.StreamingResponseCallback
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.params.ModifiableSolrParams
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -56,16 +60,44 @@ open class Enrich(mainArgs: Array<String>) :
 
 
     val builder = KStreamBuilder()
-    builder.stream<Long, ObjectNode>(keySerde, valueSerde, dwConfig.kafkaSourceTopic!!).let {
+
+    // we let sourceTopic be a comma delimited list
+    val sourceTopics = dwConfig.kafkaSourceTopic!!.split(',').toTypedArray()
+    builder.stream<Long, ObjectNode>(keySerde, valueSerde, *sourceTopics).let {
       // TODO write a parallel ValueMapper? or can Kafka Streams do this already?
       var res = it
       for (valueMapper in valueMappers) {
         res = res.mapValues(valueMapper)
       }
-      res
-    }.to(keySerde, valueSerde, dwConfig.kafkaDestTopic!!)
+      // set the "key" to be the tweet ID
+      res.selectKey { curKey, objectNode -> objectNode["id_str"].asLong() }
+      // notice custom partitioner:
+    }.to(keySerde, valueSerde, DATE_PARTITIONER, dwConfig.kafkaDestTopic!!)
 
     return KafkaStreams(builder, streamsConfig)
+  }
+
+  val DATE_PARTITIONER = StreamPartitioner<Long?, ObjectNode> { k, objectNode, numPartitions ->
+    // Partition by month, assuming a particular epoch month.
+    // partition 0 is special for bad data; we can't put into an ideal partition
+    val epoch = 2012 * 12 + 10 // October 2012
+    try {
+      val dtTime = Instant.ofEpochMilli(objectNode["timestamp_ms"].asLong()).atOffset(ZoneOffset.UTC)!!
+      // note: dtTime.month.value has january at 1.
+      val partition : Int = dtTime.year * 12 + dtTime.month.value - epoch + 1 // first partition month is 1
+      if (partition >= numPartitions) {
+        log.debug("Not enough partitions; have {}, need {}", numPartitions, partition + 1)
+        0
+      } else if (partition < 1) {
+        log.debug("Old tweet: {}; will put in partition 1", dtTime)
+        1
+      } else {
+        partition
+      }
+    } catch (e : Exception) {
+      log.debug(e.toString(), e) // 'warn' might be too noisy?
+      0
+    }
   }
 
   class SentimentEnricher(etlConfig: EnrichDwConfiguration, sentServer: String, threads: Int)
