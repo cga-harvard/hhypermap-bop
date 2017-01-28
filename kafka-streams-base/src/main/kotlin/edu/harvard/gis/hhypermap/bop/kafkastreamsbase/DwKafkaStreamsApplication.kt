@@ -56,7 +56,7 @@ abstract class DwKafkaStreamsApplication<C : DwKafkaStreamsConfiguration>
               "note: auto.offset.reset=" + dwConfig.kafkaStreamsConfig["auto.offset.reset"])
       kafkaStreams.cleanUp()
     } else if (dwConfig.kafkaStreamsConfig["auto.offset.reset"] == "earliest") {
-      log.warn("detected 'auto.offset.reset'; you should probably set kafkaStreamsReset=true sys prop")
+      log.warn("detected 'auto.offset.reset'='earliest'; you should probably set kafkaStreamsReset=true sys prop 1st time")
     }
 
     val latch = CountDownLatch(1)

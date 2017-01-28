@@ -18,7 +18,6 @@ package edu.harvard.gis.hhypermap.bop.kafkastreamsbase
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.dropwizard.logging.DefaultLoggingFactory
-import io.dropwizard.logging.LoggingFactory
 import java.util.*
 import javax.validation.constraints.NotNull
 
@@ -29,6 +28,19 @@ abstract class DwConfiguration {
 
   @JsonProperty("logging")
   @NotNull
-  val loggingConfig: LoggingFactory = DefaultLoggingFactory()
+  val loggingConfig: DefaultLoggingFactory = DefaultLoggingFactory()
 
+  open fun postBuild() {
+    // HACK:   To easily configure logging, we'd like to be able set sys props or env vars
+    //   of the form "dw.logging.loggers.edu-harvard-gis". We can't do period for the package
+    //   because it confuses Dropwizard's object path walking stuff. So we post-process here.
+    //   I'd like to have this code automatically occur via the setter of the loggers but
+    //   Jackson/Dropwizard's factory polymorphism makes this too awkward IMO.
+    loggingConfig.setLoggers(replaceHyphenatedKeys(loggingConfig.loggers))
+  }
+
+  protected fun <V> replaceHyphenatedKeys(map: Map<String, V>): MutableMap<String, V>
+          = map.mapKeysTo(
+            LinkedHashMap(map.size),
+            { it.key.replace('-', '.') } )
 }

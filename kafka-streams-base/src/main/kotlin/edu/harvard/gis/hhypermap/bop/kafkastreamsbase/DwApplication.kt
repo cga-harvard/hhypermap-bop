@@ -134,7 +134,7 @@ abstract class DwApplication<C : DwConfiguration>(mainArgs: Array<String>, cClaz
             BaseValidator.newValidator(),
             Jackson.newObjectMapper(),
             propertyPrefix)
-            .build(configProvider, configPath)
+            .build(configProvider, configPath).apply { postBuild() }
   }
 
   fun exposeRsrcFileAsJmx(jmxName: String, rsrcPath: String) {

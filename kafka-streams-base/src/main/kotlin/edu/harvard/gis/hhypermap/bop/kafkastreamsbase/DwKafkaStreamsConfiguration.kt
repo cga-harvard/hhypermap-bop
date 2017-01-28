@@ -17,30 +17,18 @@
 package edu.harvard.gis.hhypermap.bop.kafkastreamsbase
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.dropwizard.logging.DefaultLoggingFactory
-import io.dropwizard.logging.LoggingFactory
-import java.util.*
-import javax.validation.constraints.NotNull
 
 /**
  * Configuration base class handling common stuff.
  */
 abstract class DwKafkaStreamsConfiguration : DwConfiguration() {
 
-  private var _kafkaStreamsConfig: MutableMap<String,Any> = mutableMapOf()
   /** governed by KafkaStreams */
-  val kafkaStreamsConfig: MutableMap<String,Any>
-    @JsonProperty("kafkaStreams")
-    @NotNull
-    get() {
-      // rewrite hyphens to periods. We do this so we can use sys & env prop overrides without
-      // DropWizard interpreting the '.' as a sub-object
+  @JsonProperty("kafkaStreams")
+  var kafkaStreamsConfig: MutableMap<String,Any> = mutableMapOf()
 
-      // It's bad practice to update in a getter... but not sure what's better
-      _kafkaStreamsConfig = _kafkaStreamsConfig.mapKeysTo(
-              LinkedHashMap(_kafkaStreamsConfig.size),
-              { it.key.replace('-', '.') } )
-      return _kafkaStreamsConfig
-    }
-
+  override fun postBuild() {
+    super.postBuild()
+    kafkaStreamsConfig = replaceHyphenatedKeys(kafkaStreamsConfig)
+  }
 }
