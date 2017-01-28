@@ -59,3 +59,7 @@ ZooKeeper
 Zookeeper CLI to inspect and modify:
 
     docker run --rm -ti confluentinc/cp-kafka zookeeper-shell kafka-zookeeper.kontena.local:2181
+
+Or only when run directly on a local node:
+
+    docker run --rm -ti --network=host gschnyder/zkcli zookeepercli --servers bop-zookeeper.kontena.local -c ls /
