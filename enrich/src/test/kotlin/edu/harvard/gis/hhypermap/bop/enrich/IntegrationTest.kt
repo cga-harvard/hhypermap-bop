@@ -62,6 +62,7 @@ class IntegrationTest {
 
     val enrich = object : Enrich(arrayOf<String>()) {
       override fun buildConfig(configFile: File?, cClazz: Class<EnrichDwConfiguration>): EnrichDwConfiguration {
+        System.setProperty("dw.logging.loggers.edu-harvard-gis", "DEBUG")
         val dwConfig = super.buildConfig(configFile, cClazz)
         // over-write the config...
         dwConfig.kafkaSourceTopic = "etl-integrationTest-in$kafkaSuffix"

@@ -31,10 +31,11 @@ import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.params.ModifiableSolrParams
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.TimeoutException
 
 open class Enrich(mainArgs: Array<String>) :
         DwKafkaStreamsApplication<EnrichDwConfiguration>(mainArgs, EnrichDwConfiguration::class.java) {
@@ -107,15 +108,30 @@ open class Enrich(mainArgs: Array<String>) :
     val SENTIMENT_KEY = "hcga_sentiment"
 
     // We create an array of SentimentAnalyzer, one for each thread, pre-initialized.
-    val analyzers: Array<SentimentAnalyzer>
+    val analyzers = ArrayBlockingQueue<SentimentAnalyzer>(threads)
     init {
       log.info("Creating $threads SentimentAnalyzer clients")
-      analyzers = Array(threads, { i -> SentimentAnalyzer(sentServer) })
-      // TODO load in parallel instead; it's time consuming to create
-    }
-    val analyzerThreadLocal = object : ThreadLocal<SentimentAnalyzer>() {
-      val threadCounter = AtomicInteger(0)
-      override fun initialValue(): SentimentAnalyzer = analyzers[threadCounter.andIncrement]
+      val executor = Executors.newFixedThreadPool(threads)
+      try {
+        for (i in 1..threads) {
+          executor.submit {
+            try {
+              analyzers.add(SentimentAnalyzer(sentServer))
+            } catch (e : Exception) {
+              log.error(e.toString(), e)
+              executor.shutdownNow()
+            }
+          }
+        }
+        executor.shutdown()
+        executor.awaitTermination(5, TimeUnit.MINUTES)
+      } finally {
+        executor.shutdownNow()
+        if (analyzers.size != threads) {
+          close()
+        }
+      }
+      assert(!analyzers.isEmpty())
     }
 
     override fun close() {
@@ -132,7 +148,17 @@ open class Enrich(mainArgs: Array<String>) :
       if (shouldRecompute || ! tweet.has(SENTIMENT_KEY)) {
         log.trace("Sentiment enriching: processing {}", tweet)
         val tweetText = tweet.get("text").textValue()
-        val sentimentSymbol = analyzerThreadLocal.get().calcSentiment(tweetText).toString() // assume right format
+
+        val sentimentSymbol: String
+        val analyzer = analyzers.poll(20, TimeUnit.SECONDS)
+                ?: throw TimeoutException("analyzers timed out. Size: " + analyzers.size)
+        try {
+          sentimentSymbol = analyzer.calcSentiment(tweetText).toString() // assume right format
+          analyzers.add(analyzer) // only put back into queue if succeeded
+        } catch (e : Exception) {
+          analyzer.close()
+          throw e
+        }
         tweet.put(SENTIMENT_KEY, sentimentSymbol)
       } else {
         log.trace("Sentiment enriching: skipping {}", tweet)
@@ -148,6 +174,10 @@ open class Enrich(mainArgs: Array<String>) :
     val shouldRecompute = etlConfig.geoAdminRecompute
     val solrClient = etlConfig.newSolrClient(etlConfig.geoAdminSolrConnectionString +coll)
     val jsonKey = "hcga_geoadmin_" + coll.toLowerCase()
+
+    init {
+      solrClient.ping()
+    }
 
     override fun close() {
       solrClient.close()
