@@ -13,7 +13,7 @@ services:
       #TODO associate with proxy/load-balancer? But then need to secure it.
     stateful: true
     volumes:
-      - /media/attached/solr-geo-admin-home:/var/solrhome
+      - /media/attached/solr-geo-admin-home:/var/solrhome:ro
     deploy:
       wait_for_port: 8983
 #    hooks:
