@@ -44,40 +44,7 @@ open class Enrich(mainArgs: Array<String>) :
     fun main(args: Array<String>) { Enrich(args).run() }
   }
 
-  override fun buildStreams(streamsConfig: StreamsConfig, keySerde: Serde<Long>, valueSerde: Serde<ObjectNode>): KafkaStreams {
-
-    val valueMappers: MutableList<ValueMapper<ObjectNode, ObjectNode>> = mutableListOf()
-    dwConfig.sentimentServer?.let {
-      val enricher = SentimentEnricher(dwConfig, it, streamsConfig.getInt(StreamsConfig.NUM_STREAM_THREADS_CONFIG) ?: 1)
-      addCloseHook(enricher)
-      valueMappers.add(enricher)
-    }
-    for (col in dwConfig.geoAdminCollections) {
-      val enricher = GeoAdminEnricher(dwConfig, col)
-      addCloseHook(enricher)
-      valueMappers.add(enricher)
-    }
-    log.info("Enrichers: $valueMappers")
-
-
-    val builder = KStreamBuilder()
-
-    // we let sourceTopic be a comma delimited list
-    val sourceTopics = dwConfig.kafkaSourceTopic!!.split(',').toTypedArray()
-    builder.stream<Long, ObjectNode>(keySerde, valueSerde, *sourceTopics).let {
-      // TODO write a parallel ValueMapper? or can Kafka Streams do this already?
-      var res = it
-      for (valueMapper in valueMappers) {
-        res = res.mapValues(valueMapper)
-      }
-      // set the "key" to be the tweet ID
-      res.selectKey { curKey, objectNode -> objectNode["id_str"].asLong() }
-      // notice custom partitioner:
-    }.to(keySerde, valueSerde, DATE_PARTITIONER, dwConfig.kafkaDestTopic!!)
-
-    return KafkaStreams(builder, streamsConfig)
-  }
-
+  // defined BEFORE buildStreams() so that it isn't null during c'tor init
   val DATE_PARTITIONER = StreamPartitioner<Long?, ObjectNode> { k, objectNode, numPartitions ->
     // Partition by month, assuming a particular epoch month.
     // partition 0 is special for bad data; we can't put into an ideal partition
@@ -99,6 +66,42 @@ open class Enrich(mainArgs: Array<String>) :
       log.debug(e.toString(), e) // 'warn' might be too noisy?
       0
     }
+  }
+
+  // called by the constructor
+  override fun buildStreams(streamsConfig: StreamsConfig, keySerde: Serde<Long>, valueSerde: Serde<ObjectNode>): KafkaStreams {
+
+    val valueMappers: MutableList<ValueMapper<ObjectNode, ObjectNode>> = mutableListOf()
+    dwConfig.sentimentServer?.let {
+      val enricher = SentimentEnricher(dwConfig, it, streamsConfig.getInt(StreamsConfig.NUM_STREAM_THREADS_CONFIG) ?: 1)
+      addCloseHook(enricher)
+      valueMappers.add(enricher)
+    }
+    for (col in dwConfig.geoAdminCollections) {
+      val enricher = GeoAdminEnricher(dwConfig, col)
+      addCloseHook(enricher)
+      valueMappers.add(enricher)
+    }
+    log.info("Enrichers: $valueMappers")
+
+
+    val builder = KStreamBuilder()
+    assert(DATE_PARTITIONER != null)// just to be sure
+
+    // we let sourceTopic be a comma delimited list
+    val sourceTopics = dwConfig.kafkaSourceTopic!!.split(',').toTypedArray()
+    builder.stream<Long, ObjectNode>(keySerde, valueSerde, *sourceTopics).let {
+      // TODO write a parallel ValueMapper? or can Kafka Streams do this already?
+      var res = it
+      for (valueMapper in valueMappers) {
+        res = res.mapValues(valueMapper)
+      }
+      // set the "key" to be the tweet ID
+      res.selectKey { curKey, objectNode -> objectNode["id_str"].asLong() }
+      // notice custom partitioner:
+    }.to(keySerde, valueSerde, DATE_PARTITIONER, dwConfig.kafkaDestTopic!!)
+
+    return KafkaStreams(builder, streamsConfig)
   }
 
   class SentimentEnricher(etlConfig: EnrichDwConfiguration, sentServer: String, threads: Int)
