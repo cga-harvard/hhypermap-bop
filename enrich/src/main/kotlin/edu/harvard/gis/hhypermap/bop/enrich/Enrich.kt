@@ -44,30 +44,6 @@ open class Enrich(mainArgs: Array<String>) :
     fun main(args: Array<String>) { Enrich(args).run() }
   }
 
-  // defined BEFORE buildStreams() so that it isn't null during c'tor init
-  val DATE_PARTITIONER = StreamPartitioner<Long?, ObjectNode> { k, objectNode, numPartitions ->
-    // Partition by month, assuming a particular epoch month.
-    // partition 0 is special for bad data; we can't put into an ideal partition
-    val epoch = 2012 * 12 + 10 // October 2012
-    try {
-      val dtTime = Instant.ofEpochMilli(objectNode["timestamp_ms"].asLong()).atOffset(ZoneOffset.UTC)!!
-      // note: dtTime.month.value has january at 1.
-      val partition : Int = dtTime.year * 12 + dtTime.month.value - epoch + 1 // first partition month is 1
-      if (partition >= numPartitions) {
-        log.debug("Not enough partitions; have {}, need {}", numPartitions, partition + 1)
-        0
-      } else if (partition < 1) {
-        log.debug("Old tweet: {}; will put in partition 1", dtTime)
-        1
-      } else {
-        partition
-      }
-    } catch (e : Exception) {
-      log.debug(e.toString(), e) // 'warn' might be too noisy?
-      0
-    }
-  }
-
   // called by the constructor
   override fun buildStreams(streamsConfig: StreamsConfig, keySerde: Serde<Long>, valueSerde: Serde<ObjectNode>): KafkaStreams {
 
@@ -86,7 +62,6 @@ open class Enrich(mainArgs: Array<String>) :
 
 
     val builder = KStreamBuilder()
-    assert(DATE_PARTITIONER != null)// just to be sure
 
     // we let sourceTopic be a comma delimited list
     val sourceTopics = dwConfig.kafkaSourceTopic!!.split(',').toTypedArray()
@@ -99,9 +74,32 @@ open class Enrich(mainArgs: Array<String>) :
       // set the "key" to be the tweet ID
       res.selectKey { curKey, objectNode -> objectNode["id_str"].asLong() }
       // notice custom partitioner:
-    }.to(keySerde, valueSerde, DATE_PARTITIONER, dwConfig.kafkaDestTopic!!)
+    }.to(keySerde, valueSerde, partitioner(), dwConfig.kafkaDestTopic!!)
 
     return KafkaStreams(builder, streamsConfig)
+  }
+
+  fun partitioner() = StreamPartitioner<Long?, ObjectNode> { k, objectNode, numPartitions ->
+    // Partition by month, assuming a particular epoch month.
+    // partition 0 is special for bad data; we can't put into an ideal partition
+    val epoch = 2012 * 12 + 10 // October 2012
+    try {
+      val dtTime = Instant.ofEpochMilli(objectNode["timestamp_ms"].asLong()).atOffset(ZoneOffset.UTC)!!
+      // note: dtTime.month.value has january at 1.
+      val partition: Int = dtTime.year * 12 + dtTime.month.value - epoch + 1 // first partition month is 1
+      if (partition >= numPartitions) {
+        log.debug("Not enough partitions; have {}, need {}", numPartitions, partition + 1)
+        0
+      } else if (partition < 1) {
+        log.debug("Old tweet: {}; will put in partition 1", dtTime)
+        1
+      } else {
+        partition
+      }
+    } catch (e: Exception) {
+      log.debug(e.toString(), e) // 'warn' might be too noisy?
+      0
+    }
   }
 
   class SentimentEnricher(etlConfig: EnrichDwConfiguration, sentServer: String, threads: Int)
@@ -134,7 +132,7 @@ open class Enrich(mainArgs: Array<String>) :
           close()
         }
       }
-      assert(!analyzers.isEmpty())
+      check(!analyzers.isEmpty())
     }
 
     override fun close() {

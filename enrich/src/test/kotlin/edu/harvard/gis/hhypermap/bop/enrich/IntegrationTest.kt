@@ -75,7 +75,7 @@ class IntegrationTest {
         return dwConfig
       }
     }
-    testPartitioner(enrich.DATE_PARTITIONER)
+    testPartitioner(enrich.partitioner())
 
     val defProperties = Properties() // for write & read to Kafka in this test
     for (prop in listOf(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)) {
