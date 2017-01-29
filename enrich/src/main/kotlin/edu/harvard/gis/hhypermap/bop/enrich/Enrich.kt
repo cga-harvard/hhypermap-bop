@@ -232,8 +232,10 @@ open class Enrich(mainArgs: Array<String>) :
           solrTimer.update(queryResponse.elapsedTime, TimeUnit.MILLISECONDS)
         } catch (e: Exception) {//SolrServerException when embedding; possible different otherwise?
           // This is a known issue; don't halt processing:
-          if (e.message!!.contains("InvalidShapeException: Ring Self-intersection")) {
-            log.warn("$jsonKey Couldn't process tweet with coord $coordLonLatArray because: $e", e)
+          val msg = e.message!!
+          if (msg.contains("InvalidShapeException") && msg.contains("Self-intersection")) {
+            log.warn("$jsonKey Couldn't process tweet with coord $coordLonLatArray because: $e") // no stack trace
+            log.debug(e.toString(), e) // stack trace only visible at debug level
           } else {
             throw e
           }
