@@ -33,7 +33,7 @@ services:
     depends_on:
       - zookeeper
     stateful: true
-    instances: 2
+    instances: 3
     deploy:
       wait_for_port: 9092
     affinity:
