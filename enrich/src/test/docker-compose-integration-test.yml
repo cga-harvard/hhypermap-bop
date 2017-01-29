@@ -22,7 +22,7 @@ services:
     #tmpfs: "/var/lib/zookeeper"
 
   kafka:
-    image: harvardcga/cp-kafka:3.0.1
+    image: harvardcga/cp-kafka:3.1.2-hcga2
     depends_on:
       - zookeeper
     ports:

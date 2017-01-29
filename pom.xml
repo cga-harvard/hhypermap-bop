@@ -37,7 +37,7 @@
     <kotlin.version>1.0.6</kotlin.version>
     <solr.version>6.3.0</solr.version>
     <dropwizard.version>1.0.0</dropwizard.version>
-    <kafka.version>0.10.0.1</kafka.version>
+    <kafka.version>0.10.1.1</kafka.version>
     <!-- Jackson is used by lots of stuff: DropWizard, Kafka (?), Swagger so we specify explicitly. -->
     <jackson.version>2.7.6</jackson.version>
     <mainClass/><!-- redefined in child module -->
