@@ -104,7 +104,10 @@ abstract class DwApplication<C : DwConfiguration>(mainArgs: Array<String>, cClaz
     dwConfig.loggingConfig.configure(METRIC_REGISTRY, "dw")
     addCloseHook { dwConfig.loggingConfig.stop()}
 
-    exposeRsrcFileAsJmx(log.name+".GIT", "/git.properties")
+    exposeRsrcFileAsJmx(log.name+".GIT", "/git.properties").let { textMBean ->
+      log.info("git.properites: " + textMBean.text)
+    }
+
 
     val jmxReporter = JmxReporter.forRegistry(METRIC_REGISTRY).build()
     jmxReporter.start()
@@ -137,7 +140,7 @@ abstract class DwApplication<C : DwConfiguration>(mainArgs: Array<String>, cClaz
             .build(configProvider, configPath).apply { postBuild() }
   }
 
-  fun exposeRsrcFileAsJmx(jmxName: String, rsrcPath: String) {
+  fun exposeRsrcFileAsJmx(jmxName: String, rsrcPath: String): TextMBean {
     val mbean = object : StandardMBean(TextMBean::class.java, false), TextMBean {
       override val text: String
         get() =
@@ -146,6 +149,7 @@ abstract class DwApplication<C : DwConfiguration>(mainArgs: Array<String>, cClaz
     }
     ManagementFactory.getPlatformMBeanServer()
             .registerMBean(mbean, ObjectName(jmxName+":type=Text"))
+    return mbean
   }
 
   interface TextMBean {
