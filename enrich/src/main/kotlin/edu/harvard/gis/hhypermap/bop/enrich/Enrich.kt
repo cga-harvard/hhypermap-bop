@@ -202,32 +202,42 @@ open class Enrich(mainArgs: Array<String>) :
         params.set("tweetId", tweet.get("id_str").asText()!!) // for tracing/debugging
 
         // do it!
-        val jsonResultArray = tweet.putArray(jsonKey)
-        val queryResponse = solrClient.queryAndStreamResponse(params, object : StreamingResponseCallback() {
-          override fun streamDocListInfo(numFound: Long, start: Long, maxScore: Float?) {
-            if (numFound > 50) {
-              log.warn("Found high responses: $numFound and we likely dropped some.")
-            }
-          }
-
-          override fun streamSolrDocument(doc: SolrDocument) {
-            // add object holding the field=value of the doc (assume string value)
-            val obj = jsonResultArray.addObject()
-            for ((f, v) in doc) {
-              val strValue: String
-              if (v is StoredField) { // EmbeddedSolrServer
-                strValue = v.stringValue()
-              } else if (v is Number || v is String) {
-                strValue = v.toString()
-              } else {
-                throw RuntimeException("Unexpected type, field=$f class=${v.javaClass} val=$v")
+        try {
+          val queryResponse = solrClient.queryAndStreamResponse(params, object : StreamingResponseCallback() {
+            lateinit var jsonResultArray: ArrayNode
+            override fun streamDocListInfo(numFound: Long, start: Long, maxScore: Float?) {
+              jsonResultArray = tweet.putArray(jsonKey)
+              if (numFound > 50) {
+                log.warn("Found high responses: $numFound and we likely dropped some.")
               }
-              obj.put(f, strValue)
             }
-          }
-        })
 
-        solrTimer.update(queryResponse.elapsedTime, TimeUnit.MILLISECONDS)
+            override fun streamSolrDocument(doc: SolrDocument) {
+              // add object holding the field=value of the doc (assume string value)
+              val obj = jsonResultArray.addObject()
+              for ((f, v) in doc) {
+                val strValue: String
+                if (v is StoredField) { // EmbeddedSolrServer
+                  strValue = v.stringValue()
+                } else if (v is Number || v is String) {
+                  strValue = v.toString()
+                } else {
+                  throw RuntimeException("Unexpected type, field=$f class=${v.javaClass} val=$v")
+                }
+                obj.put(f, strValue)
+              }
+            }
+          })
+
+          solrTimer.update(queryResponse.elapsedTime, TimeUnit.MILLISECONDS)
+        } catch (e: Exception) {//SolrServerException when embedding; possible different otherwise?
+          // This is a known issue; don't halt processing:
+          if (e.message!!.contains("InvalidShapeException: Ring Self-intersection")) {
+            log.warn("$jsonKey Couldn't process tweet with coord $coordLonLatArray because: $e", e)
+          } else {
+            throw e
+          }
+        }
 
       } else {
         log.trace("Sentiment enriching: skipping {}", tweet)
