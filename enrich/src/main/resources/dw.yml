@@ -31,3 +31,5 @@ logging:
     # For EmbeddedSolr
     org.apache.solr.update: WARN
     org.apache.solr.core.SolrCore.Request: WARN
+    # too noisy; besides we already log the specific error since it's propagated
+    org.apache.solr.handler.RequestHandlerBase: FATAL
