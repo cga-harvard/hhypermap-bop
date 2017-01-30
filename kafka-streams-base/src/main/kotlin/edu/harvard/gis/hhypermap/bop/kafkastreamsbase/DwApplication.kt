@@ -34,10 +34,7 @@ package edu.harvard.gis.hhypermap.bop.kafkastreamsbase
 
 import com.codahale.metrics.JmxReporter
 import com.codahale.metrics.MetricRegistry
-import io.dropwizard.configuration.ConfigurationSourceProvider
-import io.dropwizard.configuration.FileConfigurationSourceProvider
-import io.dropwizard.configuration.ResourceConfigurationSourceProvider
-import io.dropwizard.configuration.YamlConfigurationFactory
+import io.dropwizard.configuration.*
 import io.dropwizard.jackson.Jackson
 import io.dropwizard.logging.BootstrapLogging
 import io.dropwizard.validation.BaseValidator
@@ -127,9 +124,10 @@ abstract class DwApplication<C : DwConfiguration>(mainArgs: Array<String>, cClaz
     }
     // propagate env to sys props so DropWizard will see it
     val propertyPrefix = "dw." //sysprop & env prefix
+    val envVarSubstituter = EnvironmentVariableSubstitutor(true)//strict; fail if can't resolve
     for ((prefName, value) in System.getenv()) {
       if (prefName.startsWith(propertyPrefix) && System.getProperty(prefName) == null) {
-        System.setProperty(prefName, value)
+        System.setProperty(prefName, envVarSubstituter.replace(value))
       }
     }
     return YamlConfigurationFactory<C>(
