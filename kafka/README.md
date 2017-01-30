@@ -12,9 +12,11 @@ start. You may have to "docker-compose rm"
 
 **Create a topic:**
 
-    docker run --rm -ti confluentinc/cp-kafka kafka-topics \
-            --zookeeper kafka-zookeeper:2181 --create --topic TestTweets \
-            --replication-factor 2 --config compression.type=lz4 --partitions 1
+    #docker run --rm -ti confluentinc/cp-kafka kafka-topics \
+    kontena container exec kafka1.novalocal/null-kafka-kafka-1 kafka-topics \
+            --zookeeper kafka-zookeeper:2181 --create --topic TweetArchiveOutput \
+            --partitions 60 --replication-factor 1 --config compression.type=lz4 \
+            --config retention.bytes=32212254720 --config retention.ms=-1
 
 See https://kafka.apache.org/documentation/ search for "topic-level configurations"
 to set additional parameters here via --config name=value
@@ -47,11 +49,6 @@ needn't specify some of these at the topic level.
 
     docker run --rm -ti confluentinc/cp-kafka kafka-consumer-groups \
             --new-consumer --bootstrap-server kafka-kafka:9092 --list
-
-    # old way (obsolete; should be empty):
-
-    docker run --rm -ti confluentinc/cp-kafka kafka-consumer-groups \
-            --zookeeper kafka-zookeeper:2181 --list
 
 ZooKeeper
 =========

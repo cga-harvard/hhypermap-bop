@@ -30,9 +30,9 @@ Alternatively maybe you should create a new "application-id" if that's fitting.
 
 Background info: http://www.confluent.io/blog/data-reprocessing-with-kafka-streams-resetting-a-streams-application/
 
-    docker run --rm -ti confluentinc/cp-kafka kafka-run-class kafka.tools.StreamsResetter \
+    kontena container exec kafka1.novalocal/null-kafka-kafka-1 kafka-run-class kafka.tools.StreamsResetter \
         --bootstrap-servers kafka-kafka:9092 --zookeeper kafka-zookeeper:2181 \
-        --application-id enrich --input-topics tweets
+        --application-id re-enrich --input-topics TweetArchiveInput
     
     Also, shouldn't need to do this as the stream has no
     local state as of this writing, but you could set -DkafkaStreamsReset=true to our app

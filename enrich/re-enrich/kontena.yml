@@ -1,0 +1,45 @@
+---
+version: '2'
+name: re-enrich
+
+services:
+
+  enrich:
+    # NOTE: REMEMBER TO UPDATE THE sent-server ONE TOO
+    instances: 3
+    extends:
+      file: ../kontena.yml
+      service: enrich
+    environment:
+      # see dw.yml too
+      dw.kafkaSourceTopic: TweetArchiveInput
+      dw.kafkaDestTopic: TweetArchiveOutput
+      dw.kafkaStreams.application-id: re-enrich
+      dw.kafkaStreams.auto-offset-reset: earliest
+      # process in multiple threads (but no more than there are CPUs on this machine)
+      dw.kafkaStreams.num-stream-threads: 11
+      #dw.kafkaStreams.request-timeout-ms: 70000
+      dw.kafkaStreams.session-timeout-ms: 80000
+      dw.kafkaStreams.commit-interval-ms: 60000
+      #dw.kafkaStreams.max.poll.records: 500
+      dw.kafkaStreams.cache-max-bytes-buffering: 0
+      dw.kafkaStreams.buffered-records-per-partition: 100
+      dw.sentiment.server: ${project}-sent-server-$${KONTENA_SERVICE_INSTANCE_NUMBER}:1234
+      dw.geoAdmin.solrConnectionString: embedded:///var/solrhome/
+      #noisy:
+      dw.logging.loggers.org-apache-kafka-clients-consumer-ConsumerConfig: WARN
+      dw.logging.loggers.org-apache-kafka-clients-producer-ProducerConfig: WARN
+      JAVA_OPTS: -XX:NewRatio=1 -Dsolr.lock.type=none -Xmx5G
+    affinity:
+      - node==enrich32cpu-%%i.novalocal
+    #mem_limit: 6000m
+
+  sent-server:
+    instances: 3
+    extends:
+      file: ../kontena.yml
+      service: sent-server
+    affinity:
+      - node==enrich32cpu-%%i.novalocal
+    #mem_limit: 10000m
+

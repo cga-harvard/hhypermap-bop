@@ -1,7 +1,6 @@
 ---
-version: 0.3.0
-stack: hcga/enrich
-
+version: '2'
+name: enrich
 services:
 
   enrich:
@@ -14,23 +13,16 @@ services:
           cmd: mvn -DskipTests clean validate assembly:assembly
     environment:
       # see dw.yml too
-      dw.kafkaSourceTopic: TweetArchiveInput,CGATweets2
+      dw.kafkaSourceTopic: CGATweets2
       dw.kafkaDestTopic: TweetArchiveOutput
-      dw.kafkaStreams.application-id: enrich2
+      dw.kafkaStreams.application-id: enrich
       dw.kafkaStreams.auto-offset-reset: earliest
-      dw.kafkaStreams.bootstrap-servers: kafka-kafka-1:9092,kafka-kafka-2:9092,kafka-kafka-3:9092
+      dw.kafkaStreams.bootstrap-servers: kafka-kafka-1:9092,kafka-kafka-2:9092
       dw.kafkaStreams.zookeeper-connect: kafka-zookeeper-1:2181,kafka-zookeeper-2:2181,kafka-zookeeper-3:2181
       # process in multiple threads (but no more than there are CPUs on this machine)
-      dw.kafkaStreams.num-stream-threads: 12
-      #dw.kafkaStreams.request-timeout-ms: 70000
-      dw.kafkaStreams.session-timeout-ms: 80000
-      dw.kafkaStreams.commit-interval-ms: 60000
-      #dw.kafkaStreams.max.poll.records: 500
-      dw.kafkaStreams.cache-max-bytes-buffering: 0
-      dw.kafkaStreams.buffered-records-per-partition: 100
-      dw.sentiment.server: sent-server:1234
+      dw.kafkaStreams.num-stream-threads: 2
+      dw.sentiment.server: ${project}-sent-server:1234
       dw.geoAdmin.solrConnectionString: embedded:///var/solrhome/
-      dw.logging.loggers.org-apache-solr-handler-RequestHandlerBase: FATAL
       JMX:
        -Dcom.sun.management.jmxremote=true
        -Dcom.sun.management.jmxremote.authenticate=false
@@ -38,13 +30,12 @@ services:
        -Dcom.sun.management.jmxremote.local.only=false
        -Dcom.sun.management.jmxremote.rmi.port=9999
        -Dcom.sun.management.jmxremote.port=9999
-      JAVA_OPTS: -XX:NewRatio=1 -Dsolr.lock.type=none -Xmx5G
+      JAVA_OPTS: -XX:NewRatio=1 -Dsolr.lock.type=none
     volumes:
       - /media/attached/solr-geo-admin-home:/var/solrhome:ro
+      - /tmp/kafka-streams/
     affinity:
-       - label==enrich
-    #TODO to talk to sent-server on local host, refer via localhost?
-    #mem_limit: 6000m
+       - node==enrich1.novalocal
 
   sent-server:
     extends:
@@ -54,8 +45,7 @@ services:
       - /media/attached/classifier-data:/var/classifier/:ro
     # don't wait-for port; the python app isn't graceful about it
     affinity:
-      - label==enrich
-    #mem_limit: 10000m
+      - node==enrich1.novalocal
 
   # no solr-geo-admin service here... we embed Solr instead for performance
 
