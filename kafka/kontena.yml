@@ -35,6 +35,7 @@ services:
     instances: 3
     deploy:
       wait_for_port: 9092
+      min_health: 0.0
     affinity:
       # %%i is instance id
       - node==kafka%%i.novalocal
