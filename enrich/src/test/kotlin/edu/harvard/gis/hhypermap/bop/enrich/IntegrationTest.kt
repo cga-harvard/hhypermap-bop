@@ -71,7 +71,7 @@ class IntegrationTest {
         dwConfig.kafkaStreamsConfig[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest" // important for test
         // note: you can set sentimentServer to null to not do; it seems to be flakey
         dwConfig.sentimentServer = dwConfig.sentimentServer!!.replace("localhost", "enrich-sent-server.kontena.local")
-        dwConfig.geoAdminSolrConnectionString = "http://geoadmin-solr.kontena.local:8983/solr/"
+        dwConfig.geoAdminSolrConnectionString = "embedded:///Volumes/HD1500/Consulting/Harvard CGA/solr-geo-admin-home/"
         return dwConfig
       }
     }
