@@ -17,7 +17,6 @@
 package edu.harvard.gis.hhypermap.bop.kafkastreamsbase
 
 import com.fasterxml.jackson.core.TreeNode
-import com.fasterxml.jackson.core.util.BufferRecycler
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.kafka.common.serialization.Deserializer
@@ -38,12 +37,7 @@ class JsonSerde : Serde<TreeNode> {
   companion object {
     fun newObjectMapper() : ObjectMapper {
       // TODO make MessagePack or not optional. Maybe make factory class configurable.
-      // WARNING: this approach is not thread-safe, and I think that's okay since it *appears*
-      //  Serde's are used in a way in which it doesn't need to be.
-      val jsonFactory = object : MessagePackFactory() {
-        val bufferRecycler = BufferRecycler() // re-used -- an optimization
-        override fun _getBufferRecycler(): BufferRecycler = bufferRecycler
-      }
+      val jsonFactory = MessagePackFactory()
       return ObjectMapper(jsonFactory)
     }
   }
