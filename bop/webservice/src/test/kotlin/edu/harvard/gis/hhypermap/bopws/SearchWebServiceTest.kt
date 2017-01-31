@@ -32,7 +32,6 @@ import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriBuilder
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 //import org.junit.Assert.*
 
@@ -184,7 +183,8 @@ class SearchWebServiceTest {
     reqJson(uri)["a.hm"].let {
       firstGridLevel = it["gridLevel"].asInt()
       firstCells = it["rows"].asInt() * it["columns"].asInt()
-      assertTrue { firstCells <= 10 && firstCells >= Math.floor(10.0 / 4.0) } // quad tree
+      //assertTrue { firstCells <= 10 && firstCells >= Math.floor(10.0 / 4.0) } // quad tree
+      assertEquals(6, firstGridLevel)
       val countSum = it["counts_ints2D"].sumBy { row -> row.sumBy { col -> col.asInt() } }
       assertEquals(3, countSum)
     }

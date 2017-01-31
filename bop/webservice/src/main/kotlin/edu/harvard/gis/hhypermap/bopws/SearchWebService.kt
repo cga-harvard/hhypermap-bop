@@ -19,7 +19,7 @@ package edu.harvard.gis.hhypermap.bopws
 import com.codahale.metrics.annotation.Timed
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.annotation.JsonProperty // IntelliJ wants to remove this but it's needed!
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -33,10 +33,10 @@ import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrException
 import org.apache.solr.common.params.FacetParams
 import org.apache.solr.common.util.NamedList
+import org.locationtech.spatial4j.distance.DistanceUtils
 import org.locationtech.spatial4j.shape.Rectangle
 import java.io.OutputStream
 import java.io.OutputStreamWriter
-import java.math.BigInteger
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -44,7 +44,7 @@ import java.util.*
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
 import javax.validation.constraints.Pattern
-import javax.validation.constraints.Size // IntelliJ wants to remove this but it's needed!
+import javax.validation.constraints.Size
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
@@ -54,12 +54,13 @@ import javax.ws.rs.core.StreamingOutput
 private val ID_FIELD = "id"
 private val TIME_FILTER_FIELD = "created_at"
 private val TIME_SORT_FIELD = "id" // re-use 'id' which is a tweet id which is timestamp based
-private val GEO_FILTER_FIELD = "coord_rpt"
-private val GEO_HEATMAP_FIELD = "coord_rpt" // and assume units="degrees" here
-private val GEO_POS_SENT_HEATMAP_FIELD = "coordSentimentPos_rpt"
-private val GEO_SORT_FIELD = "coord" // and assume units="kilometers" here
+private val GEO_FILTER_FIELD = "coord" // and assume units="kilometers" for all spatial fields
+private val GEO_HEATMAP_FIELD = "coord_hm"
+private val GEO_POS_SENT_HEATMAP_FIELD = "coordSentimentPos_hm"
+private val GEO_SORT_FIELD = "coord"
 private val TEXT_FIELD = "text"
 private val USER_FIELD = "user_name"
+private val FL_PARAM = "id,created_at,coord,user_name,text"
 
 private fun String.parseGeoBox() = parseGeoBox(this)
 
@@ -282,7 +283,7 @@ class SearchWebService(
       return
     }
     // Set FL:
-    solrQuery.setFields("id,created_at,coord,user_name,text")
+    solrQuery.setFields(FL_PARAM)
 
     // Set Sort:
     val sort = if (aDocsSort == DocSortEnum.score && qConstraints.qText == null) {//score requires query string
@@ -357,13 +358,14 @@ class SearchWebService(
       }
       val degreesSideLen = (hmRect.width + hmRect.height) / 2.0 // side len of square (in degrees units)
       val cellsSideLen = Math.sqrt(aHmLimit.toDouble()) // side len of square (in target cell units)
-      val cellSideLenInDegrees = degreesSideLen / cellsSideLen * 2
+      val cellSideLenInDegrees = degreesSideLen / cellsSideLen * 2.0
       // Note: the '* 2' is complicated.  Basically distErr is a maximum error (actual error may
       //   be smaller). This has the effect of choosing the minimum number of cells for a target
       //   resolution.  So *2 assumes quad tree (double side length to next level)
       //   and will tend to choose a more coarse level.
-      // Note: assume units="degrees" on this field type
-      solrQuery.set("facet.heatmap.distErr", cellSideLenInDegrees.toFloat().toString())
+      // Note: assume units="kilometers" on this field type
+      val cellSideLenInKm = cellSideLenInDegrees * DistanceUtils.DEG_TO_KM
+      solrQuery.set("facet.heatmap.distErr", cellSideLenInKm.toFloat().toString())
     }
   }
 

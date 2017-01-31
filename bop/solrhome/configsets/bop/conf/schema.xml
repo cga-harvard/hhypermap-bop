@@ -78,18 +78,14 @@
   <!-- TODO (lang specific search?)-->
   <field name="lang" type="string" indexed="true" stored="true" docValues="true" />
 
-  <!-- for storing (retrieval) lat,lon & sort-by-distance, but not search.
-  Note: _coordinate has docValues but not this aggregate -->
-  <!--    TODO use Lucene geo3d or Lucene latlontype to sort by distance faster
-          (not planned; who will do it?) -->
-  <field name="coord" type="geo_latlontype" indexed="false" stored="true"/>
+  <!-- search (filtering), sort-by-distance, and for retrieval. -->
+  <field name="coord" type="geo_latlonpoint" indexed="true" docValues="true" stored="true"/>
 
-  <!-- we use spatial RPT for filtering and for heatmaps -->
-  <field name="coord_rpt" type="geo_rpt_5m"         indexed="true" stored="false"/>
-  <copyField source="coord" dest="coord_rpt" />
+  <field name="coord_hm" type="geo_heatmap" stored="false" />
+  <copyField source="coord" dest="coord_hm" />
 
-  <field name="coordSentimentPos_rpt" type="geo_rpt_5m" indexed="true" stored="false"/>
-  <!-- URP conditionally copies coord to coordSentimentPos_rpt when sentiment_pos is true -->
+  <field name="coordSentimentPos_hm" type="geo_heatmap" stored="false" />
+  <!-- URP conditionally copies coord to coordSentimentPos_hm when sentiment_pos is true -->
 
   <field name="geoadmin_admin2" type="hierarchy" indexed="true" stored="true" docValues="false" />
   <field name="geoadmin_admin2_txt" type="hierarchy" indexed="true" stored="true" docValues="false" />
@@ -347,29 +343,18 @@
   <fieldType name="ignored" stored="false" indexed="false" docValues="false" multiValued="true"
              class="solr.StrField"/>
 
-  <!-- This point type indexes the coordinates as separate fields (subFields)
-    If subFieldType is defined, it references a type, and a dynamic field
-    definition is created matching *___<typename>.  Alternately, if
-    subFieldSuffix is defined, that is used to create the subFields.
-    Example: if subFieldType="double", then the coordinates would be
-      indexed in fields myloc_0___double,myloc_1___double.
-    Example: if subFieldSuffix="_d" then the coordinates would be indexed
-      in fields myloc_0_d,myloc_1_d
-    The subFields are an implementation detail of the fieldType, and end
-    users normally should not need to know about them.
-   -->
-  <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
-
-  <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
+  <!-- OLD: A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
   <!--    use float as it's good enough; couple meters? -->
   <fieldType name="geo_latlontype" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
   <dynamicField name="*_coordinate"  type="tfloat" indexed="true" stored="false" useDocValuesAsStored="false" />
 
-  <!-- An alternative geospatial field type new to Solr 4.  It supports multiValued and polygon shapes.
-    For more information about this and other Spatial fields new to Solr 4, see:
-    http://wiki.apache.org/solr/SolrAdaptersForLuceneSpatial4
-  -->
-  <!-- BOP: Optimized for heatmaps, and we use it for filtering too (although we'd like to use new
+  <!-- New in Solr 6.5 (TBD) -->
+  <fieldType name="geo_latlonpoint" class="solr.LatLonPointSpatialField" />
+
+  <!-- New in Solr 6.5 (TBD).  By default, quad tree to 4.77m precision -->
+  <fieldType name="geo_heatmap" class="solr.HeatmapSpatialField" />
+
+  <!-- OLD: Optimized for heatmaps, and we use it for filtering too (although we'd like to use new
   Lucene stuff instead for filtering once there are Solr adapters).
   For more heatmap resolution choices we use a quad tree.  To make the cells square, we use a
   square worldBounds (although now we can't span the dateline since this necessitates geo=false).

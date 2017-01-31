@@ -226,7 +226,7 @@
     <lst name="params">
       <str name="conditionField">sentiment_pos</str>
       <str name="sourceCopyField">coord</str>
-      <str name="destCopyField">coordSentimentPos_rpt</str>
+      <str name="destCopyField">coordSentimentPos_hm</str>
     </lst>
   </updateProcessor>
 
