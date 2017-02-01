@@ -71,7 +71,9 @@ class IntegrationTest {
         dwConfig.kafkaStreamsConfig[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest" // important for test
         // note: you can set sentimentServer to null to not do; it seems to be flakey
         dwConfig.sentimentServer = dwConfig.sentimentServer!!.replace("localhost", "enrich-sent-server.kontena.local")
-        dwConfig.geoAdminSolrConnectionString = "embedded:///Volumes/HD1500/Consulting/Harvard CGA/solr-geo-admin-home/"
+        dwConfig.geoAdminSolrConnectionString = "http://geoadmin-solr.kontena.local:8983/solr/"
+        // "http://geoadmin-solr.kontena.local:8983/solr/"
+        // "embedded:///Volumes/HD1500/Consulting/Harvard CGA/solr-geo-admin-home/"
         return dwConfig
       }
     }
@@ -89,7 +91,7 @@ class IntegrationTest {
     // Create test data
 
     val inputRecord = jsonStrToTreeNode(
-            """{"id":${createdAt.toLong()}, "id_str":"$createdAt", "created_at":"${LocalDateTime.now()}",
+            """{"id":825378177094660099, "id_str":"825378177094660099", "timestamp_ms":"1485620466861",
 "user":{"screen_name":"DavidWSmiley"},
 "coordinates":{"coordinates":[-71.31, 42.65], "type":"Point"},
 "text":"I feel happy", "lang":"und"}""")

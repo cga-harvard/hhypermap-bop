@@ -23,6 +23,16 @@ docker-compose docker-compose-integration-test.yml down
 
 docker run -ti confluent/tools kafka-console-consumer --topic etlOut --zookeeper 192.168.100.102:2181 --from-beginning
 
+### Create Enriched Kafka Topic
+
+note: retention.bytes is set here to a huge value that no month will exceed
+
+    #docker run --rm -ti confluentinc/cp-kafka kafka-topics \
+    kontena container exec kafka1.novalocal/null-kafka-kafka-1 kafka-topics \
+            --zookeeper kafka-zookeeper:2181 --create --topic TweetArchiveOutput2 \
+            --partitions 60 --replication-factor 1 --config compression.type=lz4 \
+            --config retention.bytes=32212254720 --config retention.ms=-1
+
 ### Resetting the Stream State ###
 
 If you want to start processing from the beginning all over again, follow these instructions. 

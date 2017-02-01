@@ -14,7 +14,7 @@ services:
     environment:
       # see dw.yml too
       dw.kafkaSourceTopic: CGATweets2
-      dw.kafkaDestTopic: TweetArchiveOutput
+      dw.kafkaDestTopic: TweetArchiveOutput2
       dw.kafkaStreams.application-id: enrich
       dw.kafkaStreams.auto-offset-reset: earliest
       dw.kafkaStreams.bootstrap-servers: kafka-kafka-1:9092,kafka-kafka-2:9092

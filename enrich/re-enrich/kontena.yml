@@ -12,8 +12,8 @@ services:
       service: enrich
     environment:
       # see dw.yml too
-      dw.kafkaSourceTopic: TweetArchiveInput
-      dw.kafkaDestTopic: TweetArchiveOutput
+      dw.kafkaSourceTopic: TweetArchiveInput2
+      dw.kafkaDestTopic: TweetArchiveOutput2
       dw.kafkaStreams.application-id: re-enrich
       dw.kafkaStreams.auto-offset-reset: earliest
       # process in multiple threads (but no more than there are CPUs on this machine)

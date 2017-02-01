@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.StreamingResponseCallback
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.params.ModifiableSolrParams
 import org.slf4j.LoggerFactory
+import java.math.BigInteger
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.concurrent.ArrayBlockingQueue
@@ -48,6 +49,7 @@ open class Enrich(mainArgs: Array<String>) :
   override fun buildStreams(streamsConfig: StreamsConfig, keySerde: Serde<Long>, valueSerde: Serde<ObjectNode>): KafkaStreams {
 
     val valueMappers: MutableList<ValueMapper<ObjectNode, ObjectNode>> = mutableListOf()
+    valueMappers.add(TimestampValueMapper())
     dwConfig.sentimentServer?.let {
       val enricher = SentimentEnricher(dwConfig, it, streamsConfig.getInt(StreamsConfig.NUM_STREAM_THREADS_CONFIG) ?: 1)
       addCloseHook(enricher)
@@ -99,6 +101,33 @@ open class Enrich(mainArgs: Array<String>) :
     } catch (e: Exception) {
       log.debug(e.toString(), e) // 'warn' might be too noisy?
       0
+    }
+  }
+
+  /** Will populate "timestamp_ms" if not set.  Applicable for old tweets? */
+  class TimestampValueMapper : ValueMapper<ObjectNode, ObjectNode> {
+    val log = LoggerFactory.getLogger(this.javaClass.`package`.name)!!
+    override fun apply(tweet: ObjectNode): ObjectNode {
+      val computedTimestampMs = snowflakeIdToTimestampMs(tweet["id_str"]?.textValue() ?: tweet["id"].asText())
+      val existingTimestampMs = tweet["timestamp_ms"]?.asLong()
+      if (existingTimestampMs == null) {
+        tweet.put("timestamp_ms", computedTimestampMs.toString()) // Twitter has this as a String; weird.
+      } else {
+        // validate the same and log error if not
+        if (computedTimestampMs != existingTimestampMs) {
+          assert(false, {"timestamp and snowflake id decode do not align"})
+          log.error("timestamp and snowflake id decode do not align: $existingTimestampMs $computedTimestampMs")
+        }
+      }
+      return tweet
+    }
+
+    fun snowflakeIdToTimestampMs(idStr: String): Long {
+      // https://dev.twitter.com/overview/api/twitter-ids-json-and-snowflake
+      // https://github.com/twitter/snowflake/blob/snowflake-2010/src/main/scala/com/twitter/service/snowflake/IdWorker.scala
+      // Use BigInteger since idStr is unsigned and might potentially overflow if we treat as a long.
+      // shift 22 bits: datacenterIdBits (5) + workerIdBits (5) + sequenceBits (12)
+      return BigInteger(idStr).shiftRight(22).longValueExact().plus(1288834974657L)
     }
   }
 
