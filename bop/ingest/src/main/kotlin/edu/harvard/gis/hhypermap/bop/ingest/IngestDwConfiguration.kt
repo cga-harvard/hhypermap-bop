@@ -18,16 +18,11 @@ package edu.harvard.gis.hhypermap.bop.ingest
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwConfiguration
-import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwKafkaStreamsConfiguration
-import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.solr.client.solrj.SolrRequest
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient
-import org.apache.solr.client.solrj.request.RequestWriter
 import org.apache.solr.common.util.NamedList
 import org.hibernate.validator.constraints.NotEmpty
-import java.util.*
 import java.util.concurrent.atomic.AtomicReference
-import javax.validation.constraints.NotNull
 import javax.validation.constraints.Pattern
 
 
@@ -41,21 +36,14 @@ class IngestDwConfiguration : DwConfiguration() {
   @JsonProperty
   val kafkaOffsetCommitIntervalMs: Long = 30000
 
-  private var _kafkaConsumerConfig: MutableMap<String,Any> = mutableMapOf()
   /** governed by KafkaConsumer */
-  val kafkaConsumerConfig: MutableMap<String,Any>
-    @JsonProperty("kafkaConsumer")
-    @NotNull
-    get() {
-      // rewrite hyphens to periods. We do this so we can use sys & env prop overrides without
-      // DropWizard interpreting the '.' as a sub-object
+  @JsonProperty("kafkaConsumer")
+  var kafkaConsumerConfig: MutableMap<String,Any> = mutableMapOf()
 
-      // It's bad practice to update in a getter... but not sure what's better
-      _kafkaConsumerConfig = _kafkaConsumerConfig.mapKeysTo(
-              LinkedHashMap(_kafkaConsumerConfig.size),
-              { it.key.replace('-', '.') } )
-      return _kafkaConsumerConfig
-    }
+  override fun postBuild() {
+    super.postBuild()
+    kafkaConsumerConfig = replaceHyphenatedKeys(kafkaConsumerConfig)
+  }
 
   // Solr stuff:
 
