@@ -107,7 +107,7 @@ services:
       #dw.logging.level: DEBUG
       dw.solrUrl: http://${project}-solr-3:8983/solr
       dw.solrCollection: bop_tweets2
-      dw.server.applicationContextPath: /bop-ws-2
+      dw.server.applicationContextPath: /bopws2
       JMX:
         -Dcom.sun.management.jmxremote=true
         -Dcom.sun.management.jmxremote.authenticate=false
