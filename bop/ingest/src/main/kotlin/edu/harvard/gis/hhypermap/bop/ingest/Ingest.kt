@@ -150,7 +150,8 @@ fun jsonToSolrInputDoc(objectNode: ObjectNode): SolrInputDocument {
 
   doc.addField("user_name", objectNode["user"]["screen_name"].textValue())
 
-  doc.addField("lang", objectNode["lang"].textValue())
+  // default to user's language if not at tweet level
+  doc.addField("lang", objectNode["lang"]?.textValue() ?: objectNode["user"]["lang"]?.textValue())
 
   //HCGA Extensions:
   doc.addField("sentiment_pos", objectNode["hcga_sentiment"].textValue().let {
