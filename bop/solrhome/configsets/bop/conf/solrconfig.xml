@@ -200,9 +200,9 @@
 
       <!-- config for DateShardingURPFactory: -->
       <str name="router.field">created_at</str>
-      <str name="shardMaxAge">+14DAYS</str>
-      <str name="docMaxAge">/DAY-150DAYS</str>
-      <str name="TZ">US/Eastern</str>
+      <str name="shardMaxAge">+1MONTH</str>
+      <str name="docMaxAge">/MONTH-24MONTHS</str>
+      <str name="TZ">UTC</str><!-- or US/EASTERN -->
     </lst>
   </requestHandler>
 
@@ -284,6 +284,7 @@
     <filterCache class="solr.FastLRUCache"
                  size="512"
                  initialSize="512"
+                 maxRamMB="256"
                  autowarmCount="0"/>
 
     <!-- Query Result Cache
@@ -295,8 +296,8 @@
                       to occupy
      -->
     <queryResultCache class="solr.LRUCache"
-                      size="512"
-                      initialSize="512"
+                      size="128"
+                      initialSize="128"
                       autowarmCount="0"/>
 
     <!-- Document Cache
@@ -306,8 +307,8 @@
          this cache will not be autowarmed.  
       -->
     <documentCache class="solr.LRUCache"
-                   size="512"
-                   initialSize="512"
+                   size="256"
+                   initialSize="256"
                    autowarmCount="0"/>
 
     <!-- custom cache currently used by block join -->
@@ -353,17 +354,6 @@
          will block until the first searcher is done warming.
       -->
     <useColdSearcher>false</useColdSearcher>
-
-    <!-- Max Warming Searchers
-         
-         Maximum number of searchers that may be warming in the
-         background concurrently.  An error is returned if this limit
-         is exceeded.
-
-         Recommend values of 1-2 for read-only slaves, higher for
-         masters w/o cache warming.
-      -->
-    <maxWarmingSearchers>2</maxWarmingSearchers>
 
   </query>
 
@@ -498,7 +488,7 @@
 
       <str name="defType">edismax</str>
       <str name="q.alt">*:*</str>
-      <str name="qf">text</str>
+      <str name="qf">text,hashtags,mentions</str>
       <!-- as of Lucene 5.5, dismax "mm" is broken. This config below enables a default of
        AND but lets a user use OR to explicitly get OR. SOLR-8812 -->
       <str name="mm">0%</str>
