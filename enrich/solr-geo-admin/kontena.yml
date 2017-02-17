@@ -10,6 +10,7 @@ services:
     # our custom solr image will accept an empty solr-home; it'll be populated on first run
     environment:
       SOLR_HOME: /var/solrhome
+      SOLR_OPTS: -Dsolr.lock.type=none
       #TODO associate with proxy/load-balancer? But then need to secure it.
     stateful: true
     volumes:
