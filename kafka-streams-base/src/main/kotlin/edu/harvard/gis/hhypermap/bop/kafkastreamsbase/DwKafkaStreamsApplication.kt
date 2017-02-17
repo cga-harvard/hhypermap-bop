@@ -16,6 +16,7 @@
 
 package edu.harvard.gis.hhypermap.bop.kafkastreamsbase
 
+import com.fasterxml.jackson.core.TreeNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.common.serialization.Serdes
@@ -38,14 +39,14 @@ abstract class DwKafkaStreamsApplication<C : DwKafkaStreamsConfiguration>
     dwConfig.kafkaStreamsConfig["value.serde"] = JsonSerde::class.java
     val streamsConfig = StreamsConfig(dwConfig.kafkaStreamsConfig)
     @Suppress("UNCHECKED_CAST")
-    val keySerde: Serde<Long> = streamsConfig.keySerde() as Serde<Long>
+    val keySerde = streamsConfig.keySerde() as Serde<Long>
     @Suppress("UNCHECKED_CAST")
-    val valueSerde: Serde<ObjectNode> = streamsConfig.valueSerde() as Serde<ObjectNode>
+    val valueSerde = streamsConfig.valueSerde() as Serde<TreeNode>
     kafkaStreams = buildStreams(streamsConfig, keySerde, valueSerde)
   }
 
   abstract fun buildStreams(streamsConfig: StreamsConfig,
-                            keySerde: Serde<Long>, valueSerde: Serde<ObjectNode>): KafkaStreams
+                            keySerde: Serde<Long>, valueSerde: Serde<TreeNode>): KafkaStreams
 
   fun run() {
     addCloseHook {kafkaStreams.close()}

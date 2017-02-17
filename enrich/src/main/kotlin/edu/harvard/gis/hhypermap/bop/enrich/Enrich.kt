@@ -16,6 +16,7 @@
 
 package edu.harvard.gis.hhypermap.bop.enrich
 
+import com.fasterxml.jackson.core.TreeNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import edu.harvard.gis.hhypermap.bop.kafkastreamsbase.DwKafkaStreamsApplication
@@ -46,7 +47,7 @@ open class Enrich(mainArgs: Array<String>) :
   }
 
   // called by the constructor
-  override fun buildStreams(streamsConfig: StreamsConfig, keySerde: Serde<Long>, valueSerde: Serde<ObjectNode>): KafkaStreams {
+  override fun buildStreams(streamsConfig: StreamsConfig, keySerde: Serde<Long>, valueSerde: Serde<TreeNode>): KafkaStreams {
 
     val valueMappers: MutableList<ValueMapper<ObjectNode, ObjectNode>> = mutableListOf()
     valueMappers.add(TimestampValueMapper())
@@ -67,16 +68,28 @@ open class Enrich(mainArgs: Array<String>) :
 
     // we let sourceTopic be a comma delimited list
     val sourceTopics = dwConfig.kafkaSourceTopic!!.split(',').toTypedArray()
-    builder.stream<Long, ObjectNode>(keySerde, valueSerde, *sourceTopics).let {
-      // TODO write a parallel ValueMapper? or can Kafka Streams do this already?
-      var res = it
+    @Suppress("UNCHECKED_CAST")
+    builder.stream<Long, TreeNode>(keySerde, valueSerde, *sourceTopics).let {
+
+      // Filter out values that aren't objects (e.g. filter out strings)
+      var res = it.filter { key, treeNode ->
+        if (treeNode is ObjectNode) {
+          true
+        } else {
+          log.warn("Filtering out bad node type: $treeNode of class ${treeNode.javaClass}")
+          false
+        }
+      }.mapValues { treeNode -> treeNode as ObjectNode } // cast
+
       for (valueMapper in valueMappers) {
         res = res.mapValues(valueMapper)
       }
+
       // set the "key" to be the tweet ID
       res.selectKey { curKey, objectNode -> objectNode["id_str"].asLong() }
+
       // notice custom partitioner:
-    }.to(keySerde, valueSerde, partitioner(), dwConfig.kafkaDestTopic!!)
+    }.to(keySerde, valueSerde as Serde<ObjectNode>, partitioner(), dwConfig.kafkaDestTopic!!)
 
     return KafkaStreams(builder, streamsConfig)
   }
