@@ -53,7 +53,7 @@ import javax.ws.rs.core.StreamingOutput
 //  Solr fields: (TODO make configurable?)
 private val ID_FIELD = "id"
 private val TIME_FILTER_FIELD = "created_at"
-private val TIME_SORT_FIELD = "id" // re-use 'id' which is a tweet id which is timestamp based
+private val TIME_SORT_FIELD = "created_at_dv"
 private val GEO_FILTER_FIELD = "coord" // and assume units="kilometers" for all spatial fields
 private val GEO_HEATMAP_FIELD = "coord_hm"
 private val GEO_POS_SENT_HEATMAP_FIELD = "coordSentimentPos_hm"
@@ -261,7 +261,7 @@ class SearchWebService(
     try {
       solrResp = solrClient.query(solrQuery);
     } catch(e: SolrException) {
-      throw WebApplicationException(e.message, e.code()) // retain http code
+      throw WebApplicationException(e)
     }
 
     return SearchResponse(
@@ -395,7 +395,8 @@ class SearchWebService(
     return map
   }
 
-  private fun solrIdToTweetId(value: Any): String = (value as Long).toString()
+  // Tweet ID (unsigned Long) on ingest is mapped to a Java Long (signed).  Here we reverse that.
+  private fun solrIdToTweetId(value: Any): String = java.lang.Long.toUnsignedString(value as Long)
 
   @JsonPropertyOrder("a.matchDocs", "d.docs", "a.time", "a.hm", "a.hm.posSent", "a.user", "a.text", "timing")
   data class SearchResponse (

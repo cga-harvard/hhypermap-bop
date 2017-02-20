@@ -128,12 +128,11 @@ fun jsonToSolrInputDoc(objectNode: ObjectNode): SolrInputDocument {
 
   val doc = SolrInputDocument()
 
-  doc.addField("id", objectNode["id_str"].asLong())
+  // note: if we were to instead call asLong() on a number too big then Jackson would return 0!
+  doc.addField("id", objectNode["id_str"].asText().let { java.lang.Long.parseUnsignedLong(it) })
 
   // populate createdAt using either timestamp_ms or created_at
-  val createdAtInst = objectNode["timestamp_ms"].asLong().let {timeLong ->
-    Instant.ofEpochMilli(timeLong)
-  }
+  val createdAtInst = objectNode["timestamp_ms"].asLong().let { Instant.ofEpochMilli(it) }
   doc.addField("created_at", Date.from(createdAtInst))
   val user_utc_offset = objectNode["user"]["utc_offset"]?.asLong() // in secs
   if (user_utc_offset != null) {
