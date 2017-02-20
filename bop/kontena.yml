@@ -144,6 +144,7 @@ services:
       dw.kafkaConsumer.auto-offset-reset: earliest
       dw.kafkaConsumer.bootstrap-servers: kafka-kafka-1:9092,kafka-kafka-2:9092,kafka-kafka-3:9092
       dw.kafkaConsumer.group-id: solr-bop_tweets2
+      dw.kafkaConsumer.max-partition-fetch-bytes: 50000
       # We send to the node containing "RT" (most likely where needed, and kinda needed for our date URP)
       dw.solrConnectionString: http://${project}-solr-1:8983/solr/
       dw.solrCollection: bop_tweets2 #note: update dw.kafkaConsumer.group-id accordingly
@@ -155,6 +156,6 @@ services:
         -Dcom.sun.management.jmxremote.rmi.port=9999
         -Dcom.sun.management.jmxremote.port=9999
       # NewRatio=1 means 1/2 heap is for young gen since this is ETL.
-      JAVA_OPTS: -XX:NewRatio=1 -Xmx256M
+      JAVA_OPTS: -XX:NewRatio=1 -Xmx384M -XX:+CrashOnOutOfMemoryError
     affinity:
       - node==bop-solr-1.novalocal
