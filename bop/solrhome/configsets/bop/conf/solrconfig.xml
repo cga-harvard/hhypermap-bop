@@ -488,7 +488,7 @@
 
       <str name="defType">edismax</str>
       <str name="q.alt">*:*</str>
-      <str name="qf">text,hashtags,mentions</str>
+      <str name="qf">text hashtags mentions</str>
       <!-- as of Lucene 5.5, dismax "mm" is broken. This config below enables a default of
        AND but lets a user use OR to explicitly get OR. SOLR-8812 -->
       <str name="mm">0%</str>
