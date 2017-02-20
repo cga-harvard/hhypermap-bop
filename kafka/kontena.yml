@@ -23,6 +23,8 @@ services:
       #ZOO_MY_ID: 1  (automatic using KONTENA_SERVICE_INSTANCE_NUMBER in the entrypoint script)
       ZOO_SERVERS: server.1=${project}-zookeeper-1:2888:3888 server.2=${project}-zookeeper-2:2888:3888 server.3=${project}-zookeeper-3:2888:3888
       ZOO_AUTOPURGE_PURGE_INTERVAL: 24
+      JMXPORT: 9999
+      SERVER_JVMFLAGS: -Xmx500M -XX:+CrashOnOutOfMemoryError
 
   kafka:
     image: harvardcga/cp-kafka:3.1.2-hcga2
