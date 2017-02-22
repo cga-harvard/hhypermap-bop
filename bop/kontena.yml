@@ -61,6 +61,13 @@ services:
     stateful: true
     volumes:
       - /opt/solr/server/solr/
+    health_check:
+      protocol: http
+      port: 8983
+      uri: '/solr/admin/collections&action=CLUSTERSTATUS'
+      interval: 60 #seconds
+      initial_delay: 200 #seconds
+      timeout: 10 #seconds
 
   # Deprecated; will be removed
   webservice:
