@@ -6,7 +6,8 @@ echo "(BOP_ENV=$BOP_ENV)"
 case "$BOP_ENV" in
   "Kontena" ) # Kontena, VPN'ed to MOC
     #On Docker for Mac, name resolution when VPN to Kontena doesn't reliably resolve
-    ZK_HOST="$(nslookup "bop-zookeeper" | grep -m1 "^Address: " | cut -d' ' -f2):2181"
+    zkHostname="$(nslookup "bop-zookeeper" | grep -m1 "^Address: " | cut -d' ' -f2)"
+    ZK_HOST="${zkHostname:?Failed to nslookup bop-zookeeper. Remember to be on VPN}:2181"
     SOLR_URL_COLL=http://bop-solr:8983/solr/bop_tweets2
     # createNodeSet is sensitive to the SOLR_HOST which is in turn based on
     #  KONTENA_NODE_NAME which has changed slightly across Kontena versions and seems sticky/node
