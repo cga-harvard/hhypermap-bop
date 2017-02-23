@@ -25,13 +25,7 @@ docker run -ti confluent/tools kafka-console-consumer --topic etlOut --zookeeper
 
 ### Create Enriched Kafka Topic
 
-note: retention.bytes is set here to a huge value that no month will exceed
-
-    #docker run --rm -ti confluentinc/cp-kafka kafka-topics \
-    kontena container exec kafka1.novalocal/null-kafka-kafka-1 kafka-topics \
-            --zookeeper kafka-zookeeper:2181 --create --topic TweetArchiveOutput2 \
-            --partitions 60 --replication-factor 1 --config compression.type=lz4 \
-            --config retention.bytes=32212254720 --config retention.ms=-1
+(see example in kafka/README.md)
 
 ### Resetting the Stream State ###
 

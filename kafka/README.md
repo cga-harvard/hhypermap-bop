@@ -14,9 +14,13 @@ start. You may have to "docker-compose rm"
 
     #docker run --rm -ti confluentinc/cp-kafka kafka-topics \
     kontena container exec kafka1.novalocal/null-kafka-kafka-1 kafka-topics \
-            --zookeeper kafka-zookeeper:2181 --create --topic TweetArchiveOutput \
-            --partitions 60 --replication-factor 1 --config compression.type=lz4 \
-            --config retention.bytes=32212254720 --config retention.ms=-1
+            --zookeeper kafka-zookeeper:2181 --create --topic TweetArchiveOutput2 \
+            --partitions 60 --replication-factor 1 \
+            --config compression.type=lz4 \
+            --config cleanup.policy=compact \
+            --config min.cleanable.dirty.ratio=0.1 \
+            --config retention.bytes=-1 \
+            --config retention.ms=-1
 
 See https://kafka.apache.org/documentation/ search for "topic-level configurations"
 to set additional parameters here via --config name=value
@@ -26,12 +30,12 @@ needn't specify some of these at the topic level.
 
 **Delete a topic:**
 
-    docker run --rm -ti confluentinc/cp-kafka kafka-topics \
+    kontena container exec kafka1.novalocal/null-kafka-kafka-1 kafka-topics \
             --zookeeper kafka-zookeeper:2181 --delete --topic TestTweets
 
 **Get disk utilization:**
 
-    kontena container exec kafka-kafka-1 du -sh '/var/lib/kafka/data/*'
+    kontena container exec kafka1.novalocal/null-kafka-kafka-1 sh -c 'du -h /var/lib/kafka/data/*'
 
 **Copy topic from one to another:**
 
