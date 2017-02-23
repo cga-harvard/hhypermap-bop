@@ -7,7 +7,7 @@ services:
   zookeeper:
     image: harvardcga/zookeeper:3.4
     ports:
-      - "2181:2181"
+      - 2181:2181
     environment:
       #ZOO_MY_ID: 1  (automatic using KONTENA_SERVICE_INSTANCE_NUMBER in the entrypoint script)
       ZOO_SERVERS: server.1=${project}-zookeeper-1:2888:3888 server.2=${project}-zookeeper-2:2888:3888 server.3=${project}-zookeeper-3:2888:3888
@@ -22,6 +22,12 @@ services:
       # %%i is instance id
       - node==bop-solr-%%i.novalocal
     stateful: true
+    health_check:
+      protocol: tcp
+      port: 2181
+      timeout: 10
+      interval: 300
+      initial_delay: 10
 
   # For Solr, we treat bop-solr-1 kinda special in that we deliberately do various processing on
   # this node: RT shard is here, SolrCloud's Overseer is here, the node also runs bop-webservice
@@ -64,7 +70,7 @@ services:
     health_check:
       protocol: http
       port: 8983
-      uri: '/solr/admin/collections&action=CLUSTERSTATUS'
+      uri: '/solr/admin/collections?action=CLUSTERSTATUS'
       interval: 60 #seconds
       initial_delay: 200 #seconds
       timeout: 10 #seconds
