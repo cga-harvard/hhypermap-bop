@@ -43,8 +43,9 @@ services:
       ENABLE_REMOTE_JMX_OPTS: true #port 18983
       #TODO softcommit: only on "RT"?  Otherwise use 1 hour?
       # poll-queue-time: SOLR-7333 default is 25ms but way too small IMO.
+      # NOTE: auto-commit and most other settings are in solrconfig, where are they can be changed
+      #       without starting/stopping Solr as is needed here in kontena.yml.
       SOLR_OPTS:
-        -Dsolr.autoSoftCommit.maxTime=5000
         -Dsolr.cloud.replication.poll-queue-time-ms=1000
         -Dsolr.cloud.replication.runners=2
 #    hooks:
