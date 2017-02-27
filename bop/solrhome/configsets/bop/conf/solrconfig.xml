@@ -213,6 +213,8 @@
 
   <updateRequestProcessorChain name="dateSharded">
     <processor class="edu.harvard.gis.hhypermap.bop.solrplugins.DateShardingURPFactory" />
+    <!-- If we want to re-index, either use a new collection, or comment out this URP: -->
+    <processor class="solr.SkipExistingDocumentsProcessorFactory"/>
     <processor class="solr.DistributedUpdateProcessorFactory"/>
     <processor class="solr.IgnoreFieldUpdateProcessorFactory">
       <str name="fieldName">_route_</str>

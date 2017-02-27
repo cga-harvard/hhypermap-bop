@@ -73,7 +73,7 @@ services:
       port: 8983
       uri: '/solr/admin/collections?action=CLUSTERSTATUS'
       interval: 60 #seconds
-      initial_delay: 200 #seconds
+      initial_delay: 200 #seconds. Slightly longer than Solr leaderVoteWait=180sec
       timeout: 10 #seconds
 
   # Deprecated; will be removed
@@ -173,3 +173,4 @@ services:
       JAVA_OPTS: -XX:NewRatio=1 -Xmx384M -XX:+CrashOnOutOfMemoryError
     affinity:
       - node==bop-solr-1.novalocal
+    instances: 2
