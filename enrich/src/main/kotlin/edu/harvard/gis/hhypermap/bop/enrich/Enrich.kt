@@ -126,10 +126,19 @@ open class Enrich(mainArgs: Array<String>) :
       if (existingTimestampMs == null) {
         tweet.put("timestamp_ms", computedTimestampMs.toString()) // Twitter has this as a String; weird.
       } else {
-        // validate the same and log error if not
+        // validate the same and log if not
         if (computedTimestampMs != existingTimestampMs) {
-          assert(false, {"timestamp and snowflake id decode do not align"})
-          log.error("timestamp and snowflake id decode do not align: $existingTimestampMs $computedTimestampMs")
+          //assert(false, {"timestamp and snowflake id decode do not align"})
+          // DWS: I've observed that frequently, the "existingTimestampMs" is follows the computed one
+          val delta: Long = Math.abs(computedTimestampMs - existingTimestampMs)
+          val msg = "timestamp and snowflake id decode do not align: $existingTimestampMs $computedTimestampMs ($delta)"
+          if (delta >= 1000) {
+            log.warn(msg)
+          } else if (delta >= 500) {
+            log.info(msg)
+          } else {
+            log.debug(msg)
+          }
         }
       }
       return tweet
