@@ -6,7 +6,7 @@ services:
 
   enrich:
     # NOTE: REMEMBER TO UPDATE THE sent-server ONE TOO
-    instances: 3
+    instances: 2
     extends:
       file: ../kontena.yml
       service: enrich
@@ -31,15 +31,15 @@ services:
       dw.logging.loggers.org-apache-kafka-clients-producer-ProducerConfig: WARN
       JAVA_OPTS: -XX:NewRatio=1 -Dsolr.lock.type=none -Xmx5G
     affinity:
-      - node==enrich32cpu-%%i.novalocal
+      - node==enrich32cpu-%%i.moclocal
     #mem_limit: 6000m
 
   sent-server:
-    instances: 3
+    instances: 2
     extends:
       file: ../kontena.yml
       service: sent-server
     affinity:
-      - node==enrich32cpu-%%i.novalocal
+      - node==enrich32cpu-%%i.moclocal
     #mem_limit: 10000m
 
