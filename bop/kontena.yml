@@ -76,11 +76,13 @@ services:
       initial_delay: 200 #seconds. Slightly longer than Solr leaderVoteWait=180sec
       timeout: 10 #seconds
 
-  # Deprecated; will be removed
   webservice:
-    image: harvardcga/bop-webservice:0.1.1
-    ports:
-      - 8080:8080
+    image: harvardcga/bop-webservice:0.2
+    build: ./webservice
+    hooks:
+      pre_build:
+        - name: maven
+          cmd: cd webservice && mvn -DskipTests clean validate assembly:assembly
     depends_on:
       - solr
     external_links:
@@ -89,7 +91,7 @@ services:
       # see bop-ws.yml
       #dw.logging.level: DEBUG
       dw.solrUrl: http://${project}-solr-3:8983/solr
-      dw.solrCollection: bop
+      dw.solrCollection: bop_tweets2
       dw.server.applicationContextPath: /bopws
       JMX:
         -Dcom.sun.management.jmxremote=true
@@ -107,36 +109,13 @@ services:
     affinity:
       - node==bop-solr-3.novalocal
 
+  # Deprecated; will be removed
   webservice2:
     image: harvardcga/bop-webservice:0.2
-    build: ./webservice
-    hooks:
-      pre_build:
-        - name: maven
-          cmd: cd webservice && mvn -DskipTests clean validate assembly:assembly
-    depends_on:
-      - solr
-    external_links:
-      - loadbalancer-loadbalancer
+    extends: webservice
     environment:
-      # see bop-ws.yml
-      #dw.logging.level: DEBUG
-      dw.solrUrl: http://${project}-solr-3:8983/solr
-      dw.solrCollection: bop_tweets2
       dw.server.applicationContextPath: /bopws2
-      JMX:
-        -Dcom.sun.management.jmxremote=true
-        -Dcom.sun.management.jmxremote.authenticate=false
-        -Dcom.sun.management.jmxremote.ssl=false
-        -Dcom.sun.management.jmxremote.local.only=false
-        -Dcom.sun.management.jmxremote.rmi.port=9999
-        -Dcom.sun.management.jmxremote.port=9999
-      JAVA_OPTS: -Xmx256M
-      KONTENA_LB_INTERNAL_PORT: 8080
       KONTENA_LB_VIRTUAL_PATH: /bopws2/
-      KONTENA_LB_KEEP_VIRTUAL_PATH: true
-    deploy:
-      wait_for_port: 8080
     affinity:
       - node==bop-solr-4.novalocal
 
