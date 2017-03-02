@@ -61,10 +61,10 @@ services:
     deploy:
       wait_for_port: 8983
       min_health: 0.0
-    instances: 4 #TODO 5
+    instances: 5
     affinity:
       # %%i is instance id
-      - node==bop-solr-%%i.novalocal
+      - label==bop-solr-%%i
     stateful: true
     volumes:
       - /opt/solr/server/solr/
