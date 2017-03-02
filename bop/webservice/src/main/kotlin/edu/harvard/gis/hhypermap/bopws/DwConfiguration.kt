@@ -56,6 +56,9 @@ class DwConfiguration : Configuration() {
   @JsonProperty
   var solrUrl: String? = null
 
+  @JsonProperty
+  var solrParams: Map<String, String>? = null
+
   @NotEmpty @JsonProperty
   var solrCollection: String? = null
 

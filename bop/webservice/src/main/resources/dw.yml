@@ -5,6 +5,10 @@
 #solrUrl: http://${SOLR_HOST:-localhost}:${SOLR_PORT:-8983}/solr
 solrCollection: bop
 
+# Extra Solr params
+#solrParams:
+#  shards: shard-2016-03-01T00_00_00Z,shard-2016-04-01T00_00_00Z,shard-2016-05-01T00_00_00Z,shard-2016-06-01T00_00_00Z,shard-2016-07-01T00_00_00Z,shard-2016-08-01T00_00_00Z,shard-2016-09-01T00_00_00Z,shard-2016-10-01T00_00_00Z,shard-2016-11-01T00_00_00Z,shard-2016-12-01T00_00_00Z,shard-2017-01-01T00_00_00Z,shard-2017-02-01T00_00_00Z  
+
 #  REFERENCE: http://www.dropwizard.io/1.0.0/docs/manual/configuration.html
 #server:
 #  applicationContextPath: /bop-ws

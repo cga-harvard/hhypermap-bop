@@ -48,6 +48,9 @@ it expects it at localhost:8983.  That will very likely need to be
 changed, since the docker image doesn't contain Solr (a bad idea).
 You might need to supply the real IP or hostname of your machine.
 
+You can pass on extra parameters to Solr, e.g.:
+
+    -e dw.solrParams.shards=shard-2017-01-01T00_00_00Z,shard-2017-02-01T00_00_00Z  
 
 TODO
 ====

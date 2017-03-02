@@ -32,6 +32,8 @@ import org.apache.solr.client.solrj.response.QueryResponse
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrException
 import org.apache.solr.common.params.FacetParams
+import org.apache.solr.common.params.ModifiableSolrParams
+import org.apache.solr.common.params.SolrParams
 import org.apache.solr.common.util.NamedList
 import org.locationtech.spatial4j.distance.DistanceUtils
 import org.locationtech.spatial4j.shape.Rectangle
@@ -67,7 +69,7 @@ private fun String.parseGeoBox() = parseGeoBox(this)
 @Api
 @Path("/tweets") // TODO make path configurable == Collection
 class SearchWebService(
-        val solrClient: SolrClient) {
+        val solrClient: SolrClient, val overrideSolrParams: SolrParams = ModifiableSolrParams()) {
 
   // note: I'd prefer immutable; Jersey seems to handle it but Swagger is confused (NPE)
   data class ConstraintsParams(
@@ -257,9 +259,11 @@ class SearchWebService(
     //solrQuery.set("_route_", "realtime") TODO
     solrQuery.add("debug", "timing")
 
+    solrQuery.add(overrideSolrParams) // override params will take precedence
+
     val solrResp: QueryResponse
     try {
-      solrResp = solrClient.query(solrQuery);
+      solrResp = solrClient.query(solrQuery)
     } catch(e: SolrException) {
       throw WebApplicationException(e)
     }

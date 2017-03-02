@@ -26,6 +26,7 @@ import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import io.federecio.dropwizard.swagger.SwaggerBundle
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
+import org.apache.solr.common.params.MapSolrParams
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.slf4j.LoggerFactory
 import java.time.format.DateTimeParseException
@@ -97,7 +98,7 @@ class DwApplication : Application<DwConfiguration>() {
 
     environment.jersey().register(DTPExceptionMapper)
 
-    environment.jersey().register(SearchWebService(solrClient))
+    environment.jersey().register(SearchWebService(solrClient, MapSolrParams(configuration.solrParams ?: Collections.emptyMap())))
 
     environment.healthChecks().register(DwHealthCheck.NAME, DwHealthCheck(solrClient))
 
