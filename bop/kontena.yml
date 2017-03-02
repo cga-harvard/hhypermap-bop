@@ -77,7 +77,7 @@ services:
       timeout: 10 #seconds
 
   webservice:
-    image: harvardcga/bop-webservice:0.2
+    image: harvardcga/bop-webservice:0.3
     build: ./webservice
     hooks:
       pre_build:
@@ -111,7 +111,6 @@ services:
 
   # Deprecated; will be removed
   webservice2:
-    image: harvardcga/bop-webservice:0.2
     extends: webservice
     environment:
       dw.server.applicationContextPath: /bopws2
