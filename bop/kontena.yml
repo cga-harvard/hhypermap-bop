@@ -35,7 +35,7 @@ services:
   # go here, new data always comes here first. But not much data here. The primary shards are all
   # on the other nodes.
   solr:
-    image: harvardcga/solr:6.4.1-hcga1
+    image: harvardcga/solr:6.4.2-hcga1
     # SolrCloud mode, remote zookeeper.
     command: -c -z ${project}-zookeeper-1:2181,${project}-zookeeper-2:2181,${project}-zookeeper-3:2181
     environment:
@@ -115,6 +115,7 @@ services:
     environment:
       dw.server.applicationContextPath: /bopws2
       KONTENA_LB_VIRTUAL_PATH: /bopws2/
+      dw.solrParams.shards: shard-2017-01-01T00_00_00Z,shard-2017-02-01T00_00_00Z
     affinity:
       - node==bop-solr-4.novalocal
 
