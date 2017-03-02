@@ -130,7 +130,7 @@ class SearchWebServiceTest {
     reqJson(uri("/tweets/search", "a.time.limit" to "1000", "a.time.gap" to "PT1H",
             "a.time.filter" to "[2015-04-01 TO 2015-04-03]"))["a.time"].let {
       assertEquals("PT1H", it.get("gap").textValue())
-      assertEquals(2, it["counts"].size())
+      assertEquals(48, it["counts"].size()) // 48; mostly zeros
     }
   }
 
