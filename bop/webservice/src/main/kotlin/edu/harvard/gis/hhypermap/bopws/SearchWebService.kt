@@ -155,7 +155,7 @@ class SearchWebService(
           @ApiParam("How many documents to return in the search results.")
           aDocsLimit: Int,
 
-          @QueryParam("d.docs.sort") @DefaultValue("score")
+          @QueryParam("d.docs.sort") @DefaultValue("time")
           @ApiParam("How to order the documents before returning the top X." +
                   " 'score' is keyword search relevancy. 'time' is time descending." +
                   " 'distance' is the distance between the doc and the middle of q.geo.")

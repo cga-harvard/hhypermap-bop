@@ -92,7 +92,7 @@ class SearchWebServiceTest {
   }// tests explicit 'OR', and
 
   @Test fun testTextScoreOrder()
-          = reqJson(uri("/tweets/search", "q.text" to "fruit", "d.docs.limit" to "2")).let {
+          = reqJson(uri("/tweets/search", "q.text" to "fruit", "d.docs.limit" to "2", "d.docs.sort" to "score")).let {
     assertEquals(3, it["a.matchDocs"].asInt(), it.toString())
     assertEquals("Orange fruit fruit fruit", it["d.docs"][0]["text"].textValue(), it.toString())
     // test returns date string in expected format
