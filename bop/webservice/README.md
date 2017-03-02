@@ -30,7 +30,7 @@ To run it (in the foreground):
 Then point your browser at:
 http://localhost:8080/bopws/swagger
 
-To override configuration settings in bop-ws.yml, you can pass environment
+To override configuration settings in dw.yml, you can pass environment
 variables via docker prefixed by "dw." (Dropwizard). And some are
 special that don't use "dw.".  Examples:
      

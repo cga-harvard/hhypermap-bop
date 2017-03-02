@@ -7,7 +7,7 @@ WORKDIR /opt/bop-ws
 # assume "mvn -DskipTests clean verify assembly:assembly has been run" already
 COPY target/libs/ libs/
 COPY target/*.jar libs/
-COPY bop-ws.yml .
+COPY target/classes/dw.yml bop-ws.yml
 
 ENV JMX=\
     JAVA_OPTS=
