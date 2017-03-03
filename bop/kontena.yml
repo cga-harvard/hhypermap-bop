@@ -115,7 +115,7 @@ services:
     environment:
       dw.server.applicationContextPath: /bopws2
       KONTENA_LB_VIRTUAL_PATH: /bopws2/
-      dw.solrParams.shards: shard-2017-01-01T00_00_00Z,shard-2017-02-01T00_00_00Z
+      dw.solrParams.shards: shard-2017-01-01T00_00_00Z,shard-2017-02-01T00_00_00Z,shard-2017-03-01T00_00_00Z
     affinity:
       - node==bop-solr-4.novalocal
 
