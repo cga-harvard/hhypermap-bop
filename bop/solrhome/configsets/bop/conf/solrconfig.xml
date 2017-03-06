@@ -201,8 +201,8 @@
       <!-- config for DateShardingURPFactory: -->
       <str name="router.field">created_at</str>
       <str name="shardMaxAge">+1MONTH</str>
-      <str name="docMaxAge">/MONTH-32MONTHS</str>
-      <str name="TZ">UTC</str><!-- or US/EASTERN -->
+      <str name="docMaxAge">/MONTH-30MONTHS</str>
+      <str name="TZ">UTC</str><!-- or US/EASTERN. DO NOT CHANGE -->
     </lst>
   </requestHandler>
 

@@ -509,7 +509,7 @@ class SearchWebService(
 
   @Path("/export")
   @ApiOperation(value = "Search export endpoint for bulk doc retrieval.",
-                notes = """The q.* parameters qre query/constraints that limit the
+                notes = """The q.* parameters are query/constraints that limit the
                 matching documents. Documents come back sorted by time descending.
                 The response format is text/csv -- comma separated.  There is a header row.
                 Values are enclosed in

@@ -25,4 +25,4 @@ automatically when new shards are created. But lets say you stopped adding data;
 Also, only do this to the tail end (oldest shard/month). You can get the shard
 names by looking at the "Cloud" screen in the Solr admin UI.
 
-    curl -v -XPOST 'http://bop-solr-1:8983/solr/admin/collections?action=DELETESHARD&collection=bop&shard=shard-2016-12-23'
+    curl -v -XPOST 'http://bop-solr-1:8983/solr/admin/collections?action=DELETESHARD&collection=bop_tweets2&shard=shard-2014-09-01T00_00_00Z'
