@@ -97,7 +97,7 @@
 
   <dynamicField name="*_count"  type="int" indexed="true"  stored="false" docValues="true" />
   <!-- geoadmin path DV fields -->
-  <dynamicField name="*_pathdv" type="string" indexed="false"  stored="false" docValues="true" />
+  <dynamicField name="*_pathdv" type="string" indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" />
 
 
   <field name="sentiment_pos" type="boolean" />
