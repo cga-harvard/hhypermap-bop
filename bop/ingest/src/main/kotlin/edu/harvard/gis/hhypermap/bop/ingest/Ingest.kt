@@ -160,7 +160,16 @@ fun jsonToSolrInputDoc(objectNode: ObjectNode): SolrInputDocument {
       else -> throw RuntimeException("Bad sentiment: $it")
     }
   })
-  //TODO explicit happy heatmap
+
+  // note: the geo enrichment produces arrays because for each data set, it's possible to match in
+  //   more than one polygon. My understanding is that this should be extremely rare since the
+  //   polygons are supposed to be adjacent. However note some polygons aren't interpreted as
+  //   'valid' by JTS (used by Solr) and Spatial4j (used by Solr) will compromise by trying to fix
+  //   the polygons in such a way that it may be more likely to overlap (have larger area than begin
+  //   with).  **So any way, we always take the first value and ignore
+  //   the rest.**  We could theoretically map all of them into Solr but that's additional work.
+  //   You can find out which had more than one via querying for the *_count to be > 1, and then
+  //   trying to replay the enrichment point into solr-geo-admin to see what it produces.
 
   var prefix = "geoadmin_admin2"
   objectNode["hcga_$prefix"].let { arr ->
