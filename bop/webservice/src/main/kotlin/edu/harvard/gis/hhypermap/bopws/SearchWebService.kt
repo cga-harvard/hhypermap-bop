@@ -522,7 +522,7 @@ class SearchWebService(
   fun export(@BeanParam
              qConstraints: ConstraintsParams,
 
-             @QueryParam("d.docs.limit") @Min(1) @Max(100) // TODO increase once we have authentication
+             @QueryParam("d.docs.limit") @Min(1) @Max(10000) // TODO vary based on authentication?
              @ApiParam("How many documents to return.")
              aDocsLimit: Int
   ): Response {
@@ -542,7 +542,7 @@ class SearchWebService(
       throw WebApplicationException(e.message, e.code()) // retain http code
     }
 
-    // assume this echos params on the server to include 'fl' (we arranged for this in solrconfig)
+    // assume this echo's params on the server to include 'fl' (we arranged for this in solrconfig)
     val flStr = (solrResp.header.findRecursive("params", "fl")
             ?: throw Exception("Expected echoParams=all and 'fl' to be set")) as String
     val fieldList = flStr.split(',')
