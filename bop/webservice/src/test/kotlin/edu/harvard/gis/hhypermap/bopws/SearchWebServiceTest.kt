@@ -32,12 +32,13 @@ import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriBuilder
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 
 //import org.junit.Assert.*
 
 class SearchWebServiceTest {
   companion object {
-    val solrClient = HttpSolrClient("http://localhost:8983/solr/bop-tests") // collection must exist already
+    val solrClient = HttpSolrClient.Builder("http://localhost:8983/solr/bop-tests").build()!! // collection must exist already
 
     @JvmField @ClassRule val resources = ResourceTestRule.builder()
             .addProvider(DwApplication.DTPExceptionMapper)
@@ -45,7 +46,9 @@ class SearchWebServiceTest {
 
     @JvmStatic @BeforeClass fun beforeClass() {
       solrClient.add(listOf(
-              doc("2015-04-01T12:00:00Z", "41.5,-70", "Apple fruit", "Alex", true),
+              doc("2015-04-01T12:00:00Z", "41.5,-70", "Apple fruit", "Alex", true).apply {
+                setField("geoadmin_admin2_txt", "/United States/Massachusetts/Middlesex")
+              },
               doc("2015-04-02T12:00:00Z", "42.5,-70", "Orange fruit fruit fruit", "Otto", false), // neg
               doc("2015-04-03T12:00:00Z", "43.5,-70", "Lemon fruit", "Luke", true)
       ))
@@ -221,9 +224,13 @@ class SearchWebServiceTest {
     try {
       assert(200 == rsp.status, {"Bad Status: ${rsp.status}, entity: ${rsp.readEntity(Any::class.java)}"})
       val resultCsv: String = rsp.readEntity(String::class.java)!!;
-      assertEquals("""id,created_at,coord,user_name,text
-1427976000000,2015-04-02T12:00:00Z,"42.5,-70",Otto,Orange fruit fruit fruit
-1427889600000,2015-04-01T12:00:00Z,"41.5,-70",Alex,Apple fruit
+//      assertEquals("""id,created_at,coord,user_name,text
+//1427976000000,2015-04-02T12:00:00Z,"42.5,-70",Otto,Orange fruit fruit fruit
+//1427889600000,2015-04-01T12:00:00Z,"41.5,-70",Alex,Apple fruit
+//""", resultCsv)
+      assertEquals("""id,sentiment_pos,geoadmin_admin2,geoadmin_admin2_txt,geoadmin_us_census_tract,geoadmin_us_ma_census_block,geoadmin_us_ma_census_block_townName
+1427976000000,false,,,,,
+1427889600000,true,,/United States/Massachusetts/Middlesex,,,
 """, resultCsv)
     } finally {
       rsp.close() //note: doesn't implement Closeable but has close method
@@ -254,6 +261,12 @@ class SearchWebServiceTest {
       assertEquals(Math.min(dDocsLimit, json["a.matchDocs"].asInt()), json["d.docs"].size())
     } else {
       assertFalse(json.hasNonNull("d.docs"))
+    }
+    // ensure required fields are present
+    json["d.docs"]?.forEach { d ->
+      listOf("id", "created_at", "coord", "user_name", "text", "sentiment_pos").forEach { f ->
+        assertNotNull(d.get(f), "In doc $d we expect field $f")
+      }
     }
     val aTimeLimit = queryParams["a.time.limit"]?.toInt()
     if (aTimeLimit != null) {

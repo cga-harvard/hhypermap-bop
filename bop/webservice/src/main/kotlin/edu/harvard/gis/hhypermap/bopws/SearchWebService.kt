@@ -62,7 +62,7 @@ private val GEO_POS_SENT_HEATMAP_FIELD = "coordSentimentPos_hm"
 private val GEO_SORT_FIELD = "coord"
 private val TEXT_FIELD = "text"
 private val USER_FIELD = "user_name"
-private val FL_PARAM = "id,created_at,coord,user_name,text"
+//private val FL_PARAM = "id,created_at,coord,user_name,text" from Solr instead
 
 private fun String.parseGeoBox() = parseGeoBox(this)
 
@@ -287,7 +287,7 @@ class SearchWebService(
       return
     }
     // Set FL:
-    solrQuery.setFields(FL_PARAM)
+    //solrQuery.setFields(FL_PARAM)
 
     // Set Sort:
     val sort = if (aDocsSort == DocSortEnum.score && qConstraints.qText == null) {//score requires query string
@@ -390,9 +390,6 @@ class SearchWebService(
         // convert id original twitter id
         ID_FIELD -> solrIdToTweetId(value)
         else -> value
-      }
-      if (newValue !is String && newValue !is Number) {
-        throw Exception("field $name has unexpected value type ${newValue.javaClass}")
       }
       map.put(name, newValue)
     }
@@ -545,7 +542,7 @@ class SearchWebService(
     // assume this echo's params on the server to include 'fl' (we arranged for this in solrconfig)
     val flStr = (solrResp.header.findRecursive("params", "fl")
             ?: throw Exception("Expected echoParams=all and 'fl' to be set")) as String
-    val fieldList = flStr.split(',')
+    val fieldList = flStr.split(',').map(String::trim).toList()
 
     val streamingOutput = StreamingOutput { outputStream: OutputStream ->
       val writer = outputStream.writer() //defaults to UTF8 in Kotlin
@@ -565,7 +562,13 @@ class SearchWebService(
         // write doc
         for ((index, f) in fieldList.withIndex()) {
           if (index != 0) writer.write(','.toInt())
-          map[f]?.let { writer.writeEscaped(it.toString()) }
+          map[f]?.let {
+            if (it is List<*>) { // multi-valued
+              writer.writeEscaped(it.joinToString("|"))
+            } else { // single-value
+              writer.writeEscaped(it.toString())
+            }
+          }
         }
         writer.write('\n'.toInt())
       }
