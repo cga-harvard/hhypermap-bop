@@ -481,8 +481,24 @@
     </lst>
   </initParams>
 
-  <requestHandler name="/select/bop/search" class="solr.SearchHandler" />
-  <requestHandler name="/select/bop/export" class="solr.SearchHandler" />
+  <requestHandler name="/select/bop/search" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="fl">id,created_at,coord,user_name,text,
+        sentiment_pos,
+        geoadmin_admin2,geoadmin_admin2_txt,
+        geoadmin_us_census_tract,
+        geoadmin_us_ma_census_block,geoadmin_us_ma_census_block_townName</str>
+    </lst>
+  </requestHandler>
+  <requestHandler name="/select/bop/export" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="fl">id,
+        sentiment_pos,
+        geoadmin_admin2,geoadmin_admin2_txt,
+        geoadmin_us_census_tract,
+        geoadmin_us_ma_census_block,geoadmin_us_ma_census_block_townName</str>
+    </lst>
+  </requestHandler>
 
   <initParams name="bop" path="/select/bop/*">
     <lst name="defaults">
@@ -495,9 +511,6 @@
        AND but lets a user use OR to explicitly get OR. SOLR-8812 -->
       <str name="mm">0%</str>
       <str name="q.op">AND</str>
-
-      <!-- BOP WARNING: this will be parsed by /export in the web service; modify with care -->
-      <str name="fl">id,created_at,coord,user_name,text</str>
 
       <int name="facet.mincount">1</int>
       <int name="f.created_at.facet.mincount">0</int>
