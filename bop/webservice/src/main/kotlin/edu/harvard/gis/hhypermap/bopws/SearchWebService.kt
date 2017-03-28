@@ -66,6 +66,12 @@ private val USER_FIELD = "user_name"
 
 private fun String.parseGeoBox() = parseGeoBox(this)
 
+private fun setRouteParams(solrQuery: SolrQuery, leftInst: Instant?, rightInst: Instant?) {
+  // In Solr we've customized the date routing to hit the right shards.
+  solrQuery.set("hcga.start", leftInst?.toString())
+  solrQuery.set("hcga.end", rightInst?.toString())
+}
+
 @Api
 @Path("/tweets") // TODO make path configurable == Collection
 class SearchWebService(
@@ -121,8 +127,10 @@ class SearchWebService(
         // note: tag to exclude in a.time
         solrQuery.addFilterQuery("{!field tag=$TIME_FILTER_FIELD f=$TIME_FILTER_FIELD}" +
                 "[$leftStr TO $rightStr]")
-        // TODO determine which subset of shards to use ("shards" param)
+        setRouteParams(solrQuery, leftInst, rightInst)
+
         // TODO add caching header if we didn't need to contact the realtime shard? expire at 1am
+        //   or could we get Solr to do caching logic in distributed?
       }
 
       // q.geo
@@ -334,7 +342,10 @@ class SearchWebService(
 
     solrQuery.apply {
       set(FacetParams.FACET, true)
-      add(FacetParams.FACET_RANGE, "{!ex=$TIME_FILTER_FIELD}$TIME_FILTER_FIELD") // exclude q.time
+      // TODO {!ex=$TIME_FILTER_FIELD}  but only if aTimeFilter isn't identical to qTimeFilter
+      //    and when we do ex; sadly we need to remove the hcga.start/end routing params...
+      //    or consider doing this in 2 request 200ms delayed? (yuck); faceting 2nd.
+      add(FacetParams.FACET_RANGE, TIME_FILTER_FIELD) // exclude q.time
       add("f.$TIME_FILTER_FIELD.${FacetParams.FACET_RANGE_START}", startInst.toString())
       add("f.$TIME_FILTER_FIELD.${FacetParams.FACET_RANGE_END}", endInst.toString())
       add("f.$TIME_FILTER_FIELD.${FacetParams.FACET_RANGE_GAP}", gap.toSolr())

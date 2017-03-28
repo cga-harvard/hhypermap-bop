@@ -49,6 +49,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -310,7 +311,7 @@ public class DateShardingURPFactory extends UpdateRequestProcessorFactory {
       List<Slice> slices = new ArrayList<>(coll.getSlices());
       slices.removeIf((s) -> s.getName().equals(SHARD_RT_NAME));
       // assumption: shard names sort in date order
-      Collections.sort(slices, (s1, s2) -> s1.getName().compareTo(s2.getName()));
+      slices.sort(Comparator.comparing(Slice::getName));
       return slices;
     }
 

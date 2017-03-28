@@ -81,6 +81,12 @@
 
     <!-- BOP TODO index-sort on id -->
 
+    <!-- BOP Use '4' instead of 10 to keep segment count low, albeit with more merging. -->
+    <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
+      <int name="maxMergeAtOnce">4</int>
+      <int name="segmentsPerTier">4</int>
+    </mergePolicyFactory>
+
     <!-- LockFactory 
 
          This option specifies which Lucene LockFactory implementation
@@ -481,7 +487,7 @@
     </lst>
   </initParams>
 
-  <requestHandler name="/select/bop/search" class="solr.SearchHandler">
+  <requestHandler name="/select/bop/search" class="${solr.searchHandler:solr.SearchHandler}">
     <lst name="defaults">
       <str name="fl">id,created_at,coord,user_name,text,
         sentiment_pos,
@@ -490,7 +496,7 @@
         geoadmin_us_ma_census_block,geoadmin_us_ma_census_block_townName</str>
     </lst>
   </requestHandler>
-  <requestHandler name="/select/bop/export" class="solr.SearchHandler">
+  <requestHandler name="/select/bop/export" class="${solr.searchHandler:solr.SearchHandler}">
     <lst name="defaults">
       <str name="fl">id,
         sentiment_pos,
@@ -521,6 +527,7 @@
       <str name="f.text.facet.method">enum</str>
       <int name="facet.enum.cache.minDF">1000000</int>
 
+      <bool name="shards.tolerant">true</bool><!-- TODO remove this! -->
     </lst>
   </initParams>
 
