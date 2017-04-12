@@ -79,13 +79,16 @@
        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
   <indexConfig>
 
-    <!-- BOP TODO index-sort on id -->
+    <!-- BOP TODO index-sort? But may not help much, plus more internal hacking needed to leverage.  -->
 
     <!-- BOP Use '4' instead of 10 to keep segment count low, albeit with more merging. -->
     <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
       <int name="maxMergeAtOnce">4</int>
       <int name="segmentsPerTier">4</int>
     </mergePolicyFactory>
+
+    <!-- mostly for the realtime shard's benefit -->
+    <mergedSegmentWarmer class="org.apache.lucene.index.SimpleMergedSegmentWarmer"/>
 
     <!-- LockFactory 
 
@@ -182,7 +185,8 @@
          have some sort of hard autoCommit to limit the log size.
       -->
     <autoCommit>
-      <maxTime>${solr.autoCommit.maxTime:15000}</maxTime>
+      <maxTime>${solr.autoCommit.maxTime:60000}</maxTime>
+      <maxDocs>100000</maxDocs>
       <openSearcher>false</openSearcher>
     </autoCommit>
 
@@ -289,11 +293,17 @@
            autowarmCount - the number of entries to prepopulate from
                and old cache.  
       -->
+    <!-- BOP: maxRamMB=375 would be nice to use assuming ~8 shards per node, and 3GB (of 6GB total
+      heap) available and ~1/30th of billion docs per replica.
+      However some shards are much larger and would have fewer entries, leading to
+      cache misses that are very detrimental to overall performance. Unfortunately the cache size
+      can't be configured for the entire node. So I want each shard to have
+      a fixed cache entry size assuming that each node has a roughly similar total number of
+      documents across its shards.
+        But again, there are *so* many cache entries that even "90" isn't enough.-->
     <filterCache class="solr.FastLRUCache"
-                 size="512"
-                 initialSize="512"
-                 maxRamMB="256"
-                 autowarmCount="30"/>
+                 size="90"
+                 autowarmCount="45"/>
 
     <!-- Query Result Cache
 
@@ -304,9 +314,8 @@
                       to occupy
      -->
     <queryResultCache class="solr.LRUCache"
-                      size="128"
-                      initialSize="128"
-                      autowarmCount="0"/>
+                      maxRamMB="20"
+                      autowarmCount="2"/>
 
     <!-- Document Cache
 
@@ -316,7 +325,6 @@
       -->
     <documentCache class="solr.LRUCache"
                    size="256"
-                   initialSize="256"
                    autowarmCount="0"/>
 
     <!-- custom cache currently used by block join -->
