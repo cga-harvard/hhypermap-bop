@@ -387,16 +387,18 @@ class SearchWebService(
   private fun requestHeatmapFacet(aHmLimit: Int, aHmFilter: String?, aHmGridLevel: Int?,
                                   aHmPosSent: Boolean, solrQuery: SolrQuery) {
     solrQuery.setFacet(true)
-    solrQuery.set("facet.heatmap", "{!ex=$GEO_FILTER_FIELD}$GEO_HEATMAP_FIELD")
+    // Optimization: we don't need to exclude the geo query if the heatmap geom is the same
+    val ex = if (aHmFilter == null || solrQuery.filterQueries.any { it.contains(aHmFilter) }) "" else "{!ex=$GEO_FILTER_FIELD}"
+    solrQuery.set(FacetParams.FACET_HEATMAP, "$ex$GEO_HEATMAP_FIELD")
     if (aHmPosSent) {
-      solrQuery.add("facet.heatmap", "{!ex=$GEO_FILTER_FIELD}$GEO_POS_SENT_HEATMAP_FIELD")
-      // note: all options below apply to both heatmaps
+      solrQuery.add(FacetParams.FACET_HEATMAP, "$ex$GEO_POS_SENT_HEATMAP_FIELD")
     }
+    // note: all options below apply to all heatmaps
     val hmRectStr = aHmFilter ?: "[-90,-180 TO 90,180]"
-    solrQuery.set("facet.heatmap.geom", hmRectStr)
+    solrQuery.set(FacetParams.FACET_HEATMAP_GEOM, hmRectStr)
     if (aHmGridLevel != null) {
       // note: aHmLimit is ignored in this case
-      solrQuery.set("facet.heatmap.gridLevel", aHmGridLevel)
+      solrQuery.set(FacetParams.FACET_HEATMAP_LEVEL, aHmGridLevel)
     } else {
       // Calculate distErr that will approximate aHmLimit many cells as an upper bound
       val hmRect: Rectangle = hmRectStr.parseGeoBox()
@@ -412,7 +414,7 @@ class SearchWebService(
       //   and will tend to choose a more coarse level.
       // Note: assume units="kilometers" on this field type
       val cellSideLenInKm = cellSideLenInDegrees * DistanceUtils.DEG_TO_KM
-      solrQuery.set("facet.heatmap.distErr", cellSideLenInKm.toFloat().toString())
+      solrQuery.set(FacetParams.FACET_HEATMAP_DIST_ERR, cellSideLenInKm.toFloat().toString())
     }
   }
 
