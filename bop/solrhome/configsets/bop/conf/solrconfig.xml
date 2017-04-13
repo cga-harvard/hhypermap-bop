@@ -526,8 +526,7 @@
       <str name="mm">0%</str>
       <str name="q.op">AND</str>
 
-      <int name="facet.mincount">1</int>
-      <int name="f.created_at.facet.mincount">0</int>
+      <int name="facet.mincount">1</int> <!-- although client sends 0 for time faceting -->
       <!-- https://issues.apache.org/jira/browse/SOLR-9152 & SOLR-8988   in 6.1 -->
       <bool name="facet.distrib.mco">true</bool>
       <!-- until we know we want to either "pay" the high RAM cost of uninverting, or develop

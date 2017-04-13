@@ -135,9 +135,30 @@ class SearchWebServiceTest {
       assertEquals(48, it["counts"].size()) // 48; mostly zeros
     }
 
-    // test q.time is disjoint from a.time.filter
+    // test 0 counts (DV method via q.text)
+    reqJson(uri("/tweets/search",
+            "q.text" to "nothing",
+            "a.time.limit" to "1000", "a.time.gap" to "P1D",
+            "a.time.filter" to "[2015-04-01 TO 2015-04-03]"))["a.time"].let {
+      assertEquals("P1D", it["gap"].textValue())
+      assertEquals(2, it["counts"].size())
+      assertEquals(0, it["counts"][0]["count"].asInt())
+      assertEquals(0, it["counts"][1]["count"].asInt())
+    }
+    // test 0 counts (not DV method via old time range)
+    reqJson(uri("/tweets/search",
+            "a.time.limit" to "1000", "a.time.gap" to "P1D",
+            "a.time.filter" to "[2000-04-01 TO 2000-04-03]"))["a.time"].let {
+      assertEquals("P1D", it["gap"].textValue())
+      assertEquals(2, it["counts"].size())
+      assertEquals(0, it["counts"][0]["count"].asInt())
+      assertEquals(0, it["counts"][1]["count"].asInt())
+    }
 
+    // test q.time is disjoint from a.time.filter
+    //   also test addition of a spatial filter (selects everything) triggering DV facet method
     reqJson(uri("/tweets/search", "q.time" to "[2000-01-01 TO 2001-01-01]",
+            "q.geo" to "[40,-75 TO 50,-65]",
             "a.time.limit" to "1000", "a.time.gap" to "P1D",
             "a.time.filter" to "[2015-04-01 TO 2015-04-03]"))["a.time"].let {
       assertEquals("P1D", it["gap"].textValue())
@@ -152,6 +173,7 @@ class SearchWebServiceTest {
       assertEquals(0, it["counts"][1]["count"].asInt())
 
     }
+
   }
 
   @Test fun testTimeFacetsComputeGap() {

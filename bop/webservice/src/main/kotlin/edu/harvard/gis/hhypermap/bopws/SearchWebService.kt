@@ -55,6 +55,7 @@ import javax.ws.rs.core.StreamingOutput
 //  Solr fields: (TODO make configurable?)
 private val ID_FIELD = "id"
 private val TIME_FILTER_FIELD = "created_at"
+private val TIME_FILTER_DV_FIELD = "created_at_dv"
 private val TIME_SORT_FIELD = "created_at_dv"
 private val GEO_FILTER_FIELD = "coord" // and assume units="kilometers" for all spatial fields
 private val GEO_HEATMAP_FIELD = "coord_hm"
@@ -91,7 +92,7 @@ class SearchWebService(
     @set:ApiParam("Constrains docs by time range.  Either side can be '*' to signify" +
             " open-ended. Otherwise it must be in either format as given in the example." +
             " UTC time zone is implied.", // TODO add separate TZ param?
-            example = "[2013-03-01 TO 2013-04-01T00:00:00]")
+            example = "[2017-01-01 TO 2017-04-01T00:00:00]")
     var qTime: String? = null,
 
     @set:QueryParam("q.geo") @set:Pattern(regexp = """\[(\S+,\S+) TO (\S+,\S+)\]""")
@@ -108,34 +109,48 @@ class SearchWebService(
     }
 
     fun applyToSolrQuery(solrQuery: SolrQuery) {
+      // Determine if we should tell solr to do range faceting using the DocValues method. Ideally
+      // Solr would determine this automatically.  We tell it to do so when the per-shard result is
+      // likely very much filtered (< 5%).
+      var dvOpt = false
+
       // q.text:
-      if (qText != null) {
+      val qText = this.qText?.trim()
+      if (qText != null && qText != "*" && qText != "*:*") {
+        dvOpt = true
         solrQuery.query = qText
         // TODO will wind up in 'fq'?  If not we should use fq if no relevance sort
       }
 
       // q.user
       if (qUser != null) {
+        dvOpt = true
         solrQuery.addFilterQuery("{!field f=$USER_FIELD tag=$USER_FIELD}$qUser")
       }
 
       // q.time
       if (qTime != null) {
         val (leftInst, rightInst) = parseDateTimeRange(qTime) // parses multiple formats
-        val leftStr = leftInst?.toString() ?: "*" // normalize to Solr
-        val rightStr = rightInst?.toString() ?: "*" // normalize to Solr
-        // note: tag to exclude in a.time
-        solrQuery.addFilterQuery("{!field tag=$TIME_FILTER_FIELD f=$TIME_FILTER_FIELD}" +
-                "[$leftStr TO $rightStr]")
-        setRouteParams(solrQuery, leftInst, rightInst)
+        if (leftInst != null || rightInst != null) {
+          // TODO if time range is very small then set dvOpt
+          val leftStr = leftInst?.toString() ?: "*" // normalize to Solr
+          val rightStr = rightInst?.toString() ?: "*" // normalize to Solr
+          //TODO: if rightStr is >= NOW, modify to be midnight to be more cacheable
+          // note: tag to exclude in a.time
+          solrQuery.addFilterQuery("{!field tag=$TIME_FILTER_FIELD f=$TIME_FILTER_FIELD}" +
+                  "[$leftStr TO $rightStr]")
+          setRouteParams(solrQuery, leftInst, rightInst)
+        }
 
         // TODO add caching header if we didn't need to contact the realtime shard? expire at 1am
         //   or could we get Solr to do caching logic in distributed?
       }
 
       // q.geo
-      if (qGeo != null) {
-        qGeoRect // side effect of validating qGeo
+      val qGeoRect = this.qGeoRect
+      if (qGeoRect != null && qGeoRect != SPATIAL4J_CTX.worldBounds) {
+        // all our data has a spatial point, thus a world query is useless.
+        dvOpt = dvOpt || qGeoRect.getArea(SPATIAL4J_CTX) < SPATIAL4J_CTX.worldBounds.getArea(SPATIAL4J_CTX) * 0.05
         // note: can't use {!field} since it's the Lucene QParser that parses ranges
         // note: tag to exclude in a.hm
         solrQuery.addFilterQuery("{!lucene tag=$GEO_FILTER_FIELD df=$GEO_FILTER_FIELD}$qGeo")
@@ -144,6 +159,11 @@ class SearchWebService(
       //TODO q.geoPath
 
       //TODO q.lang
+
+
+      if (dvOpt) {
+        solrQuery.set(FacetParams.FACET_RANGE_METHOD, "dv")
+      }
     }
   }
 
@@ -175,14 +195,16 @@ class SearchWebService(
           @ApiParam("Non-0 triggers time/date range faceting. This value is the" +
                   " maximum number of time ranges to return when a.time.gap is unspecified." +
                   " This is a soft maximum; less will usually be returned. A suggested value is" +
-                  " 100." +
-                  " Note that a.time.gap effectively ignores this value." +
+                  " 80.  If too many bars are requested, the performance may suffer greatly." +
+                  " Note that setting a.time.gap will ignore this value." +
                   " See Solr docs for more details on the query/response format." +
-                  " The counts ignore the q.time filter if present.")
+                  " The counts DO NOT ignore the q.time filter if present.")
           aTimeLimit: Int,
 
           @QueryParam("a.time.gap") @Pattern(regexp = """P((\d+[YMWD])|(T\d+[HMS]))""")
-          @ApiParam("The consecutive time interval/gap for each time range.  Ignores a.time.limit." +
+          @ApiParam("The consecutive time interval/gap for each time range.  If blank, then " +
+                  "it will default to the smallest meaningful unit of time that will produce " +
+                  "fewer than a.time.limit counts.  " +
                   "The format is based on a subset of the ISO-8601 duration format.", example = "P1D")
           aTimeGap: String?,
 
@@ -336,19 +358,29 @@ class SearchWebService(
     }
 
     // verify the gap provided won't have too many bars
-    if (rangeDuration.toMillis() / gap.toMillis() > 1000) {
+    val numBarsEstimate = rangeDuration.toMillis() / gap.toMillis()
+    if (numBarsEstimate > 1000) {
       throw WebApplicationException("Gap $aTimeGap is too small for this range $aTimeFilter")
+    }
+    // avoid blowing the filter cache by having too many bars
+    if (numBarsEstimate > 80 && solrQuery.get(FacetParams.FACET_RANGE_METHOD) != null) {
+      // TODO disable the filterCache purely for this facet range; file JIRA issue
+      log.info("Too many bars requested ($numBarsEstimate), switching to facet.range.method=dv")
+      solrQuery.set(FacetParams.FACET_RANGE_METHOD, "dv")
     }
 
     solrQuery.apply {
       set(FacetParams.FACET, true)
-      // TODO {!ex=$TIME_FILTER_FIELD}  but only if aTimeFilter isn't identical to qTimeFilter
-      //    and when we do ex; sadly we need to remove the hcga.start/end routing params...
-      //    or consider doing this in 2 request 200ms delayed? (yuck); faceting 2nd.
-      add(FacetParams.FACET_RANGE, TIME_FILTER_FIELD) // exclude q.time
-      add("f.$TIME_FILTER_FIELD.${FacetParams.FACET_RANGE_START}", startInst.toString())
-      add("f.$TIME_FILTER_FIELD.${FacetParams.FACET_RANGE_END}", endInst.toString())
-      add("f.$TIME_FILTER_FIELD.${FacetParams.FACET_RANGE_GAP}", gap.toSolr())
+      // TODO {!ex=$TIME_FILTER_FIELD}  however how might that effect hcga.start/end routing params...
+      //   Hmm; maybe Solr is smart enough to short-circuit faceting when docset base is empty.
+      val field = if (solrQuery.get(FacetParams.FACET_RANGE_METHOD) == "dv") TIME_FILTER_DV_FIELD else TIME_FILTER_FIELD
+      add(FacetParams.FACET_RANGE,
+              "{!key=a.time " +
+                      "${FacetParams.FACET_RANGE_START}=$startInst " +
+                      "${FacetParams.FACET_RANGE_END}=$endInst " +
+                      "${FacetParams.FACET_RANGE_GAP}=${gap.toSolr()} " +
+                      "${FacetParams.FACET_MINCOUNT}=0 " +
+                      "}$field")
     }
   }
 
@@ -471,7 +503,7 @@ class SearchWebService(
     ) {
       companion object {
         fun fromSolr(solrResp: QueryResponse): TimeFacet? {
-          val rng = solrResp.facetRanges?.firstOrNull { it.name == TIME_FILTER_FIELD } ?: return null
+          val rng = solrResp.facetRanges?.firstOrNull { it.name == "a.time" } ?: return null
           return TimeFacet(
                   start = (rng.start as Date).toInstant().toString(),
                   end = (rng.end as Date).toInstant().toString(),
