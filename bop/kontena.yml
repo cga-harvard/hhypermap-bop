@@ -79,7 +79,7 @@ services:
       timeout: 10 #seconds
 
   webservice:
-    image: harvardcga/bop-webservice:0.3
+    image: harvardcga/bop-webservice:0.2.1
     build: ./webservice
     hooks:
       pre_build:
