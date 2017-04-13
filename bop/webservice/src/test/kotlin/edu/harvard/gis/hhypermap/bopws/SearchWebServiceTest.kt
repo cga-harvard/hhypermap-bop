@@ -120,8 +120,7 @@ class SearchWebServiceTest {
   }
 
   @Test fun testTimeFacets() {
-    // note q.time is disjoint from a.time.filter but we still get results
-    reqJson(uri("/tweets/search", "q.time" to "[2000-01-01 TO 2001-01-01]",
+    reqJson(uri("/tweets/search",
             "a.time.limit" to "1000", "a.time.gap" to "P1D",
             "a.time.filter" to "[2015-04-01 TO 2015-04-03]"))["a.time"].let {
       assertEquals("P1D", it["gap"].textValue())
@@ -134,6 +133,24 @@ class SearchWebServiceTest {
             "a.time.filter" to "[2015-04-01 TO 2015-04-03]"))["a.time"].let {
       assertEquals("PT1H", it.get("gap").textValue())
       assertEquals(48, it["counts"].size()) // 48; mostly zeros
+    }
+
+    // test q.time is disjoint from a.time.filter
+
+    reqJson(uri("/tweets/search", "q.time" to "[2000-01-01 TO 2001-01-01]",
+            "a.time.limit" to "1000", "a.time.gap" to "P1D",
+            "a.time.filter" to "[2015-04-01 TO 2015-04-03]"))["a.time"].let {
+      assertEquals("P1D", it["gap"].textValue())
+      assertEquals(2, it["counts"].size())
+      // DWS: commented out; change in behavior; we don't exclude the time filter anymore. This was
+      // to ensure we could optimize for routing to a subset of shards.  We should reconsider this
+      // in the future.
+//      assertEquals(1, it["counts"][0]["count"].asInt())
+//      assertEquals(1, it["counts"][1]["count"].asInt())
+      // 0 counts instead:
+      assertEquals(0, it["counts"][0]["count"].asInt())
+      assertEquals(0, it["counts"][1]["count"].asInt())
+
     }
   }
 
