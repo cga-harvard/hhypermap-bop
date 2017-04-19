@@ -387,8 +387,12 @@ class SearchWebService(
   private fun requestHeatmapFacet(aHmLimit: Int, aHmFilter: String?, aHmGridLevel: Int?,
                                   aHmPosSent: Boolean, solrQuery: SolrQuery) {
     solrQuery.setFacet(true)
-    // Optimization: we don't need to exclude the geo query if the heatmap geom is the same
-    val ex = if (aHmFilter == null || solrQuery.filterQueries.any { it.contains(aHmFilter) }) "" else "{!ex=$GEO_FILTER_FIELD}"
+    // Note: if the heatmap geom is the same as (or within) the filter geom, there's no need for
+    //  faceting to exclude it (will waste a filter cache entry and must be calculated).
+    // However, by excluding it we increase the possibility that Solr's docSet will
+    //  match everything which will be a large optimization. (Solr 6.6)
+    //val ex = if (aHmFilter == null || solrQuery.filterQueries.any { it.contains(aHmFilter) }) "" else "{!ex=$GEO_FILTER_FIELD}"
+    val ex = "{!ex=$GEO_FILTER_FIELD}"
     solrQuery.set(FacetParams.FACET_HEATMAP, "$ex$GEO_HEATMAP_FIELD")
     if (aHmPosSent) {
       solrQuery.add(FacetParams.FACET_HEATMAP, "$ex$GEO_POS_SENT_HEATMAP_FIELD")
