@@ -224,7 +224,7 @@
   <updateRequestProcessorChain name="dateSharded">
     <processor class="edu.harvard.gis.hhypermap.bop.solrplugins.DateShardingURPFactory" />
     <!-- If we want to re-index, either use a new collection, or comment out this URP: -->
-    <processor class="solr.SkipExistingDocumentsProcessorFactory"/>
+    <!--<processor class="solr.SkipExistingDocumentsProcessorFactory"/> TODO having issues with Solr 6.5?-->
     <processor class="solr.DistributedUpdateProcessorFactory"/>
     <processor class="solr.IgnoreFieldUpdateProcessorFactory">
       <str name="fieldName">_route_</str>
@@ -300,9 +300,13 @@
       can't be configured for the entire node. So I want each shard to have
       a fixed cache entry size assuming that each node has a roughly similar total number of
       documents across its shards.
-        But again, there are *so* many cache entries that even "90" isn't enough.-->
+      Solr 6.5+ will re-use a shared instance of any query that matches everything.  In the BOP. the
+      most filter cache entries will be from time faceting which will tend to populate each shard's
+      filter cache with entries that will match everything or nothing; and such entries are
+      essentially free (and BTW maxRamMB is unaware of value sharing).  If this were not the case,
+      we might suggest size=90 but due to this we can size this much larger (thankfully). -->
     <filterCache class="solr.FastLRUCache"
-                 size="90"
+                 size="256"
                  autowarmCount="45"/>
 
     <!-- Query Result Cache
@@ -324,7 +328,7 @@
          this cache will not be autowarmed.  
       -->
     <documentCache class="solr.LRUCache"
-                   size="256"
+                   size="500"
                    autowarmCount="0"/>
 
     <!-- custom cache currently used by block join -->
@@ -370,6 +374,10 @@
          will block until the first searcher is done warming.
       -->
     <useColdSearcher>false</useColdSearcher>
+
+    <!-- "slow" queries are logged at WARN
+      DWS: unfortunately this applies to /update requests too! -->
+    <!--<slowQueryThresholdMillis>2000</slowQueryThresholdMillis>-->
 
   </query>
 
@@ -534,7 +542,7 @@
       <str name="f.text.facet.method">enum</str>
       <int name="facet.enum.cache.minDF">1000000</int>
 
-      <bool name="shards.tolerant">true</bool><!-- TODO remove this! -->
+      <!--<bool name="shards.tolerant">true</bool>-->
     </lst>
   </initParams>
 
@@ -639,5 +647,6 @@
       <str>terms</str>
     </arr>
   </requestHandler>
+
 
 </config>

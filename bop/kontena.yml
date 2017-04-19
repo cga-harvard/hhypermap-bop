@@ -35,14 +35,14 @@ services:
   # go here, new data always comes here first. But not much data here. The primary shards are all
   # on the other nodes.
   solr:
-    image: harvardcga/solr:6.4.2-hcga2
+    image: harvardcga/solr:6.5.1-hcga3
     # SolrCloud mode, remote zookeeper.
     command: -c -z ${project}-zookeeper-1:2181,${project}-zookeeper-2:2181,${project}-zookeeper-3:2181
     environment:
       SOLR_HEAP: 6G
       ENABLE_REMOTE_JMX_OPTS: true #port 18983
       #TODO softcommit: only on "RT"?  Otherwise use 1 hour?
-      # poll-queue-time: SOLR-7333 default is 25ms but way too small IMO.
+      # poll-queue-time: SOLR-7333 default is 25ms but way too small IMO.  See SOLR-9824  (Solr 6.6?)
       # NOTE: auto-commit and most other settings are in solrconfig, where are they can be changed
       #       without starting/stopping Solr as is needed here in kontena.yml.
       SOLR_OPTS:
