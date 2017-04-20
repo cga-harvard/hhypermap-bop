@@ -379,8 +379,10 @@ class SearchWebService(
                       "${FacetParams.FACET_RANGE_START}=$startInst " +
                       "${FacetParams.FACET_RANGE_END}=$endInst " +
                       "${FacetParams.FACET_RANGE_GAP}=${gap.toSolr()} " +
-                      "${FacetParams.FACET_MINCOUNT}=0 " +
+                      //"${FacetParams.FACET_MINCOUNT}=0 " + // distributed search bug; won't work?
                       "}$field")
+      set("f.a.time.${FacetParams.FACET_MINCOUNT}", 0) // work-around Solr bug for facet local-params and distrib
+      set("f.$field.${FacetParams.FACET_MINCOUNT}", 0) // work-around Solr bug for facet local-params and distrib
     }
   }
 
