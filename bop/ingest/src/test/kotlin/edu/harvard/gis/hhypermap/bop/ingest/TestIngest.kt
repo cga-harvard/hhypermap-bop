@@ -196,7 +196,7 @@ class TestIngest {
   "hcga_geoadmin_us_ma_census_block": []
 }"""
     val jsonObj = ObjectMapper().readValue(input, ObjectNode::class.java)
-    val solrDoc = jsonToSolrInputDoc(jsonObj)
+    val solrDoc = edu.harvard.gis.hhypermap.bop.ingest.jsonToSolrInputDoc(jsonObj)
     // Replace Date with millis because the toString test we do next shouldn't be dependent on the
     //   current timezone.
     solrDoc.get("created_at")?.let { field -> field.setValue( (field.value as Date).time, 1f) }

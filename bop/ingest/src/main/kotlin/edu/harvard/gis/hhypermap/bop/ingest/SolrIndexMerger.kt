@@ -18,7 +18,6 @@ package edu.harvard.gis.hhypermap.bop.ingest
 
 import ch.qos.logback.classic.Level
 import io.dropwizard.logging.BootstrapLogging
-import org.apache.solr.client.solrj.impl.CloudSolrClient
 import org.apache.solr.client.solrj.impl.HttpSolrClient
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest
@@ -37,9 +36,9 @@ fun main(args: Array<String>) {
 
   BootstrapLogging.bootstrap(Level.INFO) // Dropwizard util for Logback
 
-  val docCollection = CloudSolrClient.Builder().withZkHost(zkHost).build().use { solrClient ->
-    solrClient.connect()
-    (solrClient.clusterStateProvider as ZkClientClusterStateProvider).getState(collectionName)?.get()
+  val docCollection = ZkClientClusterStateProvider(zkHost).use { csProvider ->
+    csProvider.connect()
+    csProvider.getState(collectionName)?.get()
   } ?: throw Exception("$collectionName collection doesn't exist")
 
   val replicasByNode = docCollection.replicas.groupBy { it.nodeName }
