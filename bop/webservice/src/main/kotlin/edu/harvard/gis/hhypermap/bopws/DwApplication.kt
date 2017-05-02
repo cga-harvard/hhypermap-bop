@@ -26,6 +26,7 @@ import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import io.federecio.dropwizard.swagger.SwaggerBundle
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
+import org.apache.solr.client.solrj.SolrServerException
 import org.apache.solr.common.params.MapSolrParams
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.slf4j.LoggerFactory
@@ -97,6 +98,7 @@ class DwApplication : Application<DwConfiguration>() {
     configuration.jersey?.forEach { environment.jersey().property(it.key, it.value) }
 
     environment.jersey().register(DTPExceptionMapper)
+    environment.jersey().register(SolrServerExceptionMapper)
 
     environment.jersey().register(SearchWebService(solrClient, MapSolrParams(configuration.solrParams ?: Collections.emptyMap())))
 
@@ -114,5 +116,17 @@ class DwApplication : Application<DwConfiguration>() {
               .entity(ErrorMessage(Response.Status.BAD_REQUEST.statusCode, exception.toString()))
               .build()
 
+  }
+
+  // Lets have a 500 response due to Solr return some details so that the caller has a clue what's up.
+  //  By default, DropWizard reveals nothing in the name of security (a trade-off).
+  @Provider
+  object SolrServerExceptionMapper : ExceptionMapper<SolrServerException> {
+    override fun toResponse(exception: SolrServerException?): Response {
+      log.error(exception.toString(), exception)
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+              .entity(ErrorMessage(Response.Status.INTERNAL_SERVER_ERROR.statusCode, exception.toString()))
+              .build()
+    }
   }
 }
