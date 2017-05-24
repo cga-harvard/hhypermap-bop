@@ -31,6 +31,13 @@ http://bop.worldmap.harvard.edu/bopws/swagger#/default
 BOP Web Client Source:
 https://github.com/cga-harvard/bop-ui
 
+System Architecture
+==================
+
+The high-level architecture of BOP is shown below. The primary infrastructure components are Apache Kafka and Apache Solr. Harvard CGA is harvesting geotweets, which are then enriched with metadata in the form of sentiment analysis and spatial joins with census and other boundary datasets. All geotweets are archived using a long-term Kafka topic. The BOP-core itself, which consists of a Solr index–based copy of the data just, represents the latest billion while the index goes back further in time. The BOP-core exposes a search and extraction web service API that the client consumes. All components are deployed to a Docker based infrastructure managed by Kontena. The term “BOP-core” is used to refer to both the Solr index and the web service that exposes it. The system is hosted on Massachusetts Open Cloud (MOC).    
+
+
+
 Technical Overview
 ==================
 The primary infrastructure components are Apache Kafka and Apache Solr.
