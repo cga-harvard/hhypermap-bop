@@ -4,27 +4,29 @@ Overview (official)
 The goal of the BOP is to provide a proof-of-concept platform designed to lower the
  barrier for researchers who need to access big streaming spatio-temporal datasets.  
  
-The BOP is a project run by the Harvard Center for Geographic Analysis (HCGA) with funding by the Sloan Foundation.
+The BOP is a project run by the Harvard Center for Geographic Analysis (CGA) with funding by the Sloan Foundation.
 It is being developed specifically to provide a big data API to the Harvard Dataverse and Harvard WorldMap platforms.
 The platform is loaded with streaming geo-referenced tweets but a similar dataset could, with some tweaking, be substituted.
 Hosting of the BOP is being provided by Massachusetts Open Cloud.
 
 The BOP builds on the the 2D grid heatmap faceting capability of Apache Lucene/Solr
-which we (HCGA) are calling HHypermap Core.   Development of that feature
-was through HCGA and funded by the National Endowment for the Humanities.
-It's also used by an HCGA map service discovery platform called HHypermap Registry.
+which we (CGA) refers to as HHypermap Core.   Development of that feature
+was through CGA with funding by the National Endowment for the Humanities.
+It's also used by a CGA map service discovery platform called HHypermap Registry.
 
 
 Live
 ====
 
-Web UI:
+BOP Web Client:
 http://bop.worldmap.harvard.edu/bop/
-  The web UI is *not* a direct part of the BOP project.
 
-Web-Service:
+BOP Web-Service (which BOP client uses):
 http://bop.worldmap.harvard.edu/bopws/swagger#/default
  The link is to "Swagger" based documentation.
+
+BOP Web Client Source:
+https://github.com/cga-harvard/bop-ui
 
 
 Technical Overview
@@ -75,8 +77,7 @@ route the request to (avoiding complete fan-out).
 Each portion of the BOP may have further documentation beyond this
 document.  Expore and read README.md files.
 
-This presentation provides a good overview.  However be aware that some
- aspects like the realtime shard handoff have not been implemented.
+This presentation provides a good overview.  
 Presentation: "H-Hypermap: Heatmap Analytics at Scale" (2016-10)
 slides: http://www.slideshare.net/DavidSmiley2/hhypermap-heatmap-analytics-at-scale
 video: https://www.youtube.com/watch?v=nzAH5QEl9hQ
