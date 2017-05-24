@@ -1,5 +1,5 @@
-Overview (official)
-===================
+Overview
+========
 
 The goal of the BOP is to provide a proof-of-concept platform designed to lower the
  barrier for researchers who need to access big streaming spatio-temporal datasets.  
@@ -14,6 +14,9 @@ which we (CGA) refers to as HHypermap Core.   Development of that feature
 was through CGA with funding by the National Endowment for the Humanities.
 It's also used by a CGA map service discovery platform called HHypermap Registry.
 
+The primary infrastructure components are Apache Kafka and Apache Solr. Harvard CGA is harvesting geo-tweets which are enriched with metadata for 1)sentiment analysis and 2)spatial joins with census and other boundary datasets. Enriched geot-weets are archived using a long-term Kafka topic. 
+
+The BOP itself, which consists of a Solr index–based copy of the data, represents the latest billion geo-tweets while the index goes back further in time. The BOP exposes a search and extraction webservice API that the client consumes. All components are deployed to a Docker based infrastructure managed by Kontena. The term “BOP-core” is used to refer to both the Solr index and the web service that exposes it. The system is hosted on Massachusetts Open Cloud (MOC).
 
 Live
 ====
@@ -27,15 +30,6 @@ http://bop.worldmap.harvard.edu/bopws/swagger#/default
 
 BOP Web Client Source:
 https://github.com/cga-harvard/bop-ui
-
-
-System Architecture
-===================
-The high-level architecture of BOP is shown below. 
-
-The primary infrastructure components are Apache Kafka and Apache Solr. Harvard CGA is harvesting geo-tweets, which are then enriched with metadata in the form of sentiment analysis and spatial joins with census and other boundary datasets. All geotweets are archived using a long-term Kafka topic. 
-
-The BOP itself, which consists of a Solr index–based copy of the data, represents the latest billion geo-tweets while the index goes back further in time. The BOP exposes a search and extraction webservice API that the client consumes. All components are deployed to a Docker based infrastructure managed by Kontena. The term “BOP-core” is used to refer to both the Solr index and the web service that exposes it. The system is hosted on Massachusetts Open Cloud (MOC).
 
 Technical Overview
 ==================
