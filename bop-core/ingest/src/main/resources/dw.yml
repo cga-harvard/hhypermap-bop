@@ -1,0 +1,26 @@
+kafkaSourceTopic: tweets-enriched
+
+#kafkaOffsetCommitIntervalMs: 5000
+
+# Governed by Kafka Consumer:
+kafkaConsumer:
+  # See https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/consumer/ConsumerConfig.java
+
+  # Unique name for this Kafka Streams app
+  group.id: bop-ingest
+
+  # Kafka Brokers
+  bootstrap.servers: localhost:9092
+
+  # If have no offset, consume from "earliest" or "latest"?
+  #auto.offset.reset: latest
+
+solrConnectionString: http://localhost:8983/solr/
+
+solrCollection: tweets
+
+logging:
+  level: INFO
+  #loggers:
+    #edu.harvard.gis.hhypermap.bop: DEBUG
+    #org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient: DEBUG

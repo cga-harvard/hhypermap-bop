@@ -1,0 +1,13 @@
+---
+version: '2'
+services:
+
+  ingest:
+    # Based on Kafka Connect image
+    build: .
+    image: harvardcga/bop-ingest
+    environment:
+      dw.kafkaSourceTopic: tweets-enriched2
+      dw.kafkaStreams.bootstrap-servers: ${HOST_IP}:9092
+      dw.kafkaStreams.zookeeper-connect: ${HOST_IP}:2181
+      dw.solrConnectionString: http://${HOST_IP}:8983/solr/
