@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html ng-app="SolrHeatmapApp">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>search</title>
+
+    <!-- LIBRARY CSS -->
+    <link rel="stylesheet" href="./assets/lib/ol3/ol.css">
+    <link rel="stylesheet" href="./assets/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./assets/lib/rzslider/rzslider.min.css" />
+    <link rel="stylesheet" href="./assets/lib/ol3-google-maps/css/ol3gm.css"/>
+
+    <!-- LIBRARY JS -->
+    <script src="./assets/lib/jquery/jquery-2.1.3.min.js"></script>
+    <script src="./assets/lib/bootstrap/js/bootstrap.min.js"></script>
+    <script src="./assets/lib/angular/angular.min.js"></script>
+    <script src="./assets/lib/angular/angular-ui-router.js"></script>
+    <script src="./assets/lib/ui-bootstrap/ui-bootstrap-tpls-1.3.3.min.js"></script>
+    <script src="./assets/lib/rzslider/rzslider.min.js"></script>
+    <script src="./assets/lib/proj4js/proj4.js"></script>
+    <script src="./config/3857.js"></script>
+    <script src="./assets/lib/ol3/ol.js"></script>
+    <script src="./assets/lib/moment/min/moment.min.js"></script>
+    <script src="./assets/lib/geostats/lib/geostats.min.js"></script>
+
+    <!-- When loading Google Maps on your own server, replace the src with
+         https://maps.googleapis.com/maps/api/js?v=3&key=mykey
+         where mykey is your Google Maps API key -->
+    <script type="text/javascript"
+            src="https://maps.googleapis.com/maps/api/js?v=3&key=AIzaSyAjtdt_Db2IOZDVYznVqot45xUs1tNhhDw"></script>
+    <script src="./assets/lib/ol3-google-maps/dist/ol3gm.js"></script>
+
+    <!-- APP CSS -->
+    <link rel="stylesheet" href="./build/styles.min.css">
+
+    <script src="./build/hm-client.min.js"></script>
+
+</head>
+
+<body ng-controller="MainController">
+	<ui-view></ui-view>
+    <heatmap></heatmap>
+    <responsive-layout></responsive-layout>
+</body>
+
+</html>

@@ -1,0 +1,11 @@
+build/
+coverage/
+assets/
+node_modules/
+.grunt/
+reports/
+tmp/
+
+Gruntfile.js
+3857.js
+karma.conf.js

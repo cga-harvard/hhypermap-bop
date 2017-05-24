@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head>
+   <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+   <title>geostats.js (by simon georget)</title>
+   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+   <script type="text/javascript" src="lib/geostats.js"></script>
+   <link rel="stylesheet" href="lib/geostats.css" type="text/css" />
+   <style type="text/css">
+	  <!--
+	  body {
+	    font-family: "Lucida Sans Unicode", "Lucida Grande", Verdana, Arial, Helvetica, sans-serif;
+	    color:#333;
+	    font-size: 0.8em;
+	    background-color: #F7F7F7;
+	  }
+	  #legend, #legend2, #legend3{float:left;width:28%;margin:0 2em 2em 2em;}
+
+	  .legend-block {
+		    border: 1px solid #555555;
+		    display: block;
+		    float: left;
+		    height: 12px;
+		    margin: 0.3em 0.8em 0 2em;
+		    width: 20px;
+		}
+	  .container {margin:0 auto;width:60%;}
+	  .serie strong {color:#333;}
+	  .serie {font-size: .9em;color:#555;}
+	  .classes {margin:0em 4em 2em;}
+	  .projectinfo {width:100%;text-align: center;margin:-3em 0 3em;}
+	  .legend p { height: 70px;color:#555;font-variant: small-caps;text-align: justify;border-top:1px dotted #ccc}
+	  a {color:#F47FE7;font-weight: bold;text-shadow: #fff 2px 2px 0px;text-decoration: none;}
+	  a:hover {color:#514F51;}
+	  #map, #map2, #map3 {width:100%;height:500px;border: 1px solid #ccc;background-color: #eee}
+	  h1 {color:#B5B1B1;text-shadow: #fff 2px 2px 0px;text-align: center;margin:2em 0;}
+	  h2 {color:#A2A3F2;text-shadow: #fff 2px 2px 0px;margin:2em 0 1em 0;}
+	  h3 {color:#555;font-size: .9em}
+	  hr {
+			height: 1px;
+			margin: -0.5em 0;
+			padding: 0;
+			color: #ddd;
+			background-color: #ddd;
+			border: 0;
+	  }
+	  pre {
+	  	-webkit-border-radius: 5px;
+			-moz-border-radius: 5px;
+			border-radius: 5px;
+			background-color: #D3E5FF;
+	  }
+	  #footer {font-size:0.8em;text-align: center;color:#777;margin:2em 0 1em;padding:.3em}
+	  -->
+  </style>
+</head>
+<body>
+
+<div class="container" id="top">
+	<h1>geostats - Javascript classification library <em>samples</em></h1>
+	<script type="text/javascript">
+	
+	// Samples datasets
+	// test integer - 14 values
+	var a1 = Array(12, 22, 5, 8, 43, 2, 34, 12, 34, 36, 5, 21, 23, 45);
+	// test integer - 17 values
+	var a2 = Array(12, 22, 5, 8, 43, 2, 34, 12, 34, 36, 5, 21, 23, 58, 12, 31, 38);
+	// test float - 5 values
+	var a3 = Array(1.54567, 0.7623122, 1.895432, 2.435357, 0.11143);
+	var a5 = Array(4, 1.2, 3, 2.5, 1.6, 2.2, 3.1, 2.8, 1.1, 2.7, 7.1);
+
+	var a6 = Array(12, 22, 18, 5, 8, 43, 2, 34, 12, 34, 36, 4, 9, 35, 12, 42, 43, 56, 12, 23, 
+			43, 19, 11, -1, 51, -6, 34, 33,41, 45, 23, -3, 3, 54, 1, 18, 44, 41,28, 16, 19, 
+			35, 44, 21, 23, -3, 5, 64, 15, 17, 7, 93, 6, 16, 47, 13, 46, 53, 10, 30, 31, 32, 
+			58, 28, 32, 46,53, 31, 2, 36, 41, 23, 3, 8, 15, 54, 35, 79, 15, 83, 6,-9, 78, 74, 
+			56, 78, 45, 62, 19, 70, 23, 51, 73, 67, 78, 34, 52, 61, 60, 11, 26, 48, 15, 2);
+	
+	var a8 = Array(1.6, 103.4, 12, 22, 18, 5, 8, 43, 2, 34, 12, 34, 36, 4, 9, 35, 12, 42, 43, 56, 12, 23, 
+			43, 19, 11, 2, 51, 34, 33,41, 45, 23, 3, 3, 54, 2, 18, 44, 41,28, 16, 19, 
+			35, 44, 21, 23, 3, 5, 64, 15, 17, 7, 93, 6, 16, 47, 13, 46, 53, 10, 30, 31, 32, 
+			58, 28, 32, 46,53, 31, 2, 36, 41, 23, 3, 8, 15, 54, 35, 79, 15, 83, 6, 9, 78, 74, 
+			56, 78, 45, 62, 19, 70, 23, 51, 73, 67, 78, 34, 52, 61, 60, 11, 26, 48, 15, 2);
+	
+	var a7 = Array(2,4,6,8,10,12,14);
+	/**
+	// Second serie
+	serie = new geostats(a8);
+	
+	// serie.getArithmeticProgression(4);
+	serie.getStdDeviation(6);
+	serie.getGeometricProgression(6);
+	console.log(serie.getRanges());
+	//serie.getArithmeticProgression(6);
+	//console.log(serie.getRanges());
+	//serie.setManualClassification([serie.min(), 5, 12, 58,serie.max()]);
+	serie.setPrecision(2);
+	
+	var color_x  = new Array('#e2dee6', '#c2abdd', '#9d87b6', '#735a8f', '#3d2e4e', '#000');
+	// var color_x  = new Array('#ee5588', '#44ee11', '#668811', '#000000', '#3d2e4e');
+	serie.setColors(color_x);
+	
+	document.write('<h2>Sample 2 - geostats.info() <\/h2>');
+	document.write('<p>' + (serie.info()) + '<\/p>');
+	document.write('<p class="serie"><strong>Serie (sorted) : <\/strong>' + serie.getSortedlist() + '<\/p>');
+	document.write('<hr \/>');
+	document.write(serie.getHtmlLegend());
+	*/
+	
+	// test de getQuantiles() et getClassQuantile()
+	var arr = [-1.323, 1, 3, 5, 8, 10, 12, 0, 11, 4, 5, 12.104 ];
+	serie = new geostats(arr);
+	
+	// serie.getArithmeticProgression(4);
+/* 	console.log(serie.getQuantiles(5));
+	serie.getClassQuantile(5); */
+	
+	//serie.getArithmeticProgression(6);
+	//console.log(serie.getRanges());
+	//serie.setManualClassification([serie.min(), 5, 12, 58,serie.max()]);
+	serie.setPrecision(3);
+	// serie.silent = true;
+	b = new Array(-1.323, 2, 3.131, 3.132, 12.104);
+	serie.setClassManually(b);
+	console.log(serie.getRanges());
+	var color_x  = new Array('#e2dee6', '#c2abdd', '#9d87b6', '#735a8f', '#3d2e4e', '#000');
+	// var color_x  = new Array('#ee5588', '#44ee11', '#668811', '#000000', '#3d2e4e');
+	serie.setColors(color_x);
+	
+	document.write('<h2>Sample 2 - geostats.info() <\/h2>');
+	document.write('<p>' + (serie.info()) + '<\/p>');
+	document.write('<p class="serie"><strong>Serie (sorted) : <\/strong>' + serie.getSortedlist() + '<\/p>');
+	document.write('<hr \/>');
+	document.write(serie.getHtmlLegend(null, 'de', true));
+
+
+	</script>
+  <div id="footer"><em>geostats.js</em> - Copyright (c) 2011 Simon Georget - released under MIT license - <a href="https://github.com/simogeo/geostats" title="geostats Github page">Github page</a> | <a href="#top">Go to top</a></div>
+</div>
+</body>
+</html>

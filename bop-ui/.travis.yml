@@ -1,0 +1,18 @@
+language: node_js
+node_js:
+- '4'
+script:
+- npm run js-lint
+- npm run test
+- codeclimate-test-reporter < reports/coverage/lcov.info
+after_success:
+- './deploy.sh'
+branches:
+  only:
+  - master
+env:
+  global:
+     secure: "vvGf39mTAF1Oerqe/HzzCYW1a8kuN44X0/6xiZjiLhgeSjup+/sk2MPYEPzIwATk+0pp7qFcvUKgJGMiGDHKc0MPyfvzJjFX41ycSP63ofkn+7kM1fhF/0Y0owATQ1s1OnCHERqIiwv7IW5vMFRrldUMBuBRpzK2U3uXoFJu5UZOO87qs0NGXsDp00biRlHv8MsmDxB5ah83EudYMUH4pjQQwsqqeqlYuWAi636Ad1/tlQa2N2Wk1PllxvMKxvrlNSELqNLqzgJ4PPXpPP0ZAW1QxZkG95AsALTMCBB8AIAFJC/bQOhnKQswkWL2NnD3yzzkap3s1cb60d+qnd6Uh4JVbiGv8/c6QN+uTnmseyuh6Pgd+6ko3nM4g4xfJlMgZDZHZHojH8DkWaq9OhmswyQP2nUZjEMH1P3+GMyZsh1njZ1iDQP1yTrmWk/ZNxrzy5g1Pc39RrpzWEqIz5SsduCf361NS6EpFkOQcX+Mb9rr0vdgwQq9d1bbbt5mT3v3X5rrBrAKuTZfHV3YnaBGA7J9Bc45C6yH26gfX9Z0aRQ2fRFDa91sFFETEJuVnMYMiFdAIRvE+vT0lAFkgYOqqj3/djiVYF8ufjgPQXCb2mhItK30y9vtkgUoRN9L9xzBit0d+E7JK2YgEAmglDv0NKQ1b8Z1gIGl2T+up1l+MOU="
+addons:
+  code_climate:
+    repo_token: d78986081a543c78614c51d9932dbd491902a0c70ed820ed0f1684e4b4880d84

@@ -1,0 +1,16 @@
+<div class="row">
+    <div style="max-height: {{availableHeight}}px;" class="tweet-component">
+        <li ng-repeat="tweet in tweetList" class="tweet" ng-mouseleave="removeAllfeatures()"
+            ng-mouseenter="selectTweet(tweet)" ng-click="sendToTweetStatus(tweet)">
+          <div class="list-item-text">
+            <h3>@{{tweet.user_name}}</h3>
+            <h4>{{tweet.text}}</h4>
+            <p>{{tweet.created_at | date:'medium'}}</p>
+          </div>
+        </li>
+        <div ng-if="!tweetList.length && tweetList.exist" class="no-info">
+            No Tweets Available
+        </div>
+    </div>
+    <tweet-counter></tweet-counter>
+</div>

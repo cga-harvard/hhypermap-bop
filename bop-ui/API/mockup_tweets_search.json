@@ -1,0 +1,80 @@
+
+{
+  "a.matchDocs" : 312374,
+  "a.hm" : {
+    "gridLevel" : 3,
+    "rows" : 4,
+    "columns" : 8,
+    "minX" : -180.0,
+    "maxX" : 180.0,
+    "minY" : -90.0,
+    "maxY" : 90.0,
+    "counts_ints2D" : [ [ 0, 10342, 1794, 0, 0, 0, 0, 0 ], [ 0, 105662, 194576, 0, 0, 0, 0, 0 ], null, null ],
+    "projection" : "EPSG:4326"
+  },
+  "timing" : {
+    "label" : "callSolr.elapsed",
+    "millis" : 128,
+    "subs" : [ {
+      "label" : "QTime",
+      "millis" : 124,
+      "subs" : [ {
+        "label" : "prepare",
+        "millis" : 0,
+        "subs" : [ {
+          "label" : "query",
+          "millis" : 0
+        }, {
+          "label" : "facet",
+          "millis" : 0
+        }, {
+          "label" : "facet_module",
+          "millis" : 0
+        }, {
+          "label" : "mlt",
+          "millis" : 0
+        }, {
+          "label" : "highlight",
+          "millis" : 0
+        }, {
+          "label" : "stats",
+          "millis" : 0
+        }, {
+          "label" : "expand",
+          "millis" : 0
+        }, {
+          "label" : "debug",
+          "millis" : 0
+        } ]
+      }, {
+        "label" : "process",
+        "millis" : 124,
+        "subs" : [ {
+          "label" : "query",
+          "millis" : 1
+        }, {
+          "label" : "facet",
+          "millis" : 122
+        }, {
+          "label" : "facet_module",
+          "millis" : 0
+        }, {
+          "label" : "mlt",
+          "millis" : 0
+        }, {
+          "label" : "highlight",
+          "millis" : 0
+        }, {
+          "label" : "stats",
+          "millis" : 0
+        }, {
+          "label" : "expand",
+          "millis" : 0
+        }, {
+          "label" : "debug",
+          "millis" : 0
+        } ]
+      } ]
+    } ]
+  }
+}

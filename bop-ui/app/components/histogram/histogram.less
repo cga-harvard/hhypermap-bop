@@ -1,0 +1,76 @@
+.bar-graph svg {
+    margin-top: 0px;
+    margin-bottom: -14px;
+}
+
+#inbar.disabled svg g rect {
+    fill: #FCFCFC;
+}
+
+.histogram-legend {
+    color: #777;
+    font-size: 9px;
+    white-space: nowrap;
+}
+.legend-ticks {
+    background: #aaa;
+    width: 3px;
+    border-radius: 2px;
+    height: 8px;
+    margin-top: -12px;
+}
+
+.y-axis {
+    .rz-pointer {
+        display: none;
+    }
+}
+.y-axis.rz-vertical {
+    .rz-bar {
+        background: #609dd2;
+        bottom: 0;
+        left: auto;
+        width: 2px;
+        height: 100%;
+    }
+}
+
+.y-axis {
+    top: auto;
+    left: 0;
+    width: 32px;
+    height: 100%;
+    padding: 0 0 0 16px;
+    margin: 0 !important;
+}
+.y-axis-wrap {
+    position: absolute;
+}
+.y-axis.rz-vertical .rz-ticks{
+    flex-direction: column-reverse;
+    padding: 0px 0;
+    left: 0;
+}
+.y-axis.rz-vertical .rz-bar-wrapper{
+    margin: 0 0 0 -10px;
+}
+.y-axis.rz-vertical .rz-tick{
+    background: #aaa;
+    border-radius: 10%;
+    height: 2px;
+    width: 6px;
+}
+
+.y-legend {
+    position:absolute;
+    left: -30px;
+    ul {
+        display: flex;
+        flex-direction: column-reverse;
+        justify-content: space-between;
+        height: 100%;
+    }
+    ul li {
+        vertical-align: middle;
+    }
+}

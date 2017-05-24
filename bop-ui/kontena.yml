@@ -1,0 +1,23 @@
+---
+version: '2'
+name: bop
+services:
+  
+  # HA configuration. See https://github.com/confluentinc/cp-docker-images/blob/master/examples/kafka-cluster/docker-compose.yml
+  # NOTE: we're fine with using Docker local volumes; it shouldn't be much data.
+  client:
+    image: harvardcga/bop-ui
+    ports:
+      - "80:80" 
+    deploy:
+      wait_for_port: 80
+    external_links:
+      - loadbalancer-loadbalancer
+    affinity:
+      - node==enrich32cpu-1.moclocal
+    environment:
+      - KONTENA_LB_MODE=http
+      - KONTENA_LB_INTERNAL_PORT=80
+      - KONTENA_LB_VIRTUAL_HOSTS=bop.worldmap.harvard.edu
+      - KONTENA_LB_VIRTUAL_PATH=/bop/    
+      

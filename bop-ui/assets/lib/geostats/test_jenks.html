@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head>
+   <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+   <title>geostats.js (by simon georget)</title>
+   <script type="text/javascript" src="lib/geostats.js"></script>
+   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+   <link rel="stylesheet" href="lib/geostats.css" type="text/css" />
+   <style type="text/css">
+	  <!--
+	  body {
+	    font-family: "Lucida Sans Unicode", "Lucida Grande", Verdana, Arial, Helvetica, sans-serif;
+	    color:#333;
+	    font-size: 0.8em;
+	    background-color: #F7F7F7;
+	  }
+	  #legend, #legend2 {float:left;width:45%;margin:0 1em 2em 0;}
+	  .legend-block {
+		    border: 1px solid #555555;
+		    display: block;
+		    float: left;
+		    height: 12px;
+		    margin: 0.3em 0.8em 0 2em;
+		    width: 20px;
+		}
+	  .container {margin:0 auto;width:60%;}
+	  .serie strong {color:#333;}
+	  .serie {font-size: .9em;color:#555;}
+	  .classes {margin:0em 4em 2em;}
+	  .projectinfo {width:100%;text-align: center;margin:-3em 0 3em;}
+	  a {color:#F47FE7;font-weight: bold;text-shadow: #fff 2px 2px 0px;text-decoration: none;}
+	  a:hover {color:#514F51;}
+	  #map {width:100%;height:500px;border: 1px solid #ccc;background-color: #eee}
+	  h1 {color:#B5B1B1;text-shadow: #fff 2px 2px 0px;text-align: center;margin:2em 0;}
+	  h2 {color:#A2A3F2;text-shadow: #fff 2px 2px 0px;margin:2em 0 1em 0;}
+	  h3 {color:#555;font-size: .9em}
+	  hr {
+			height: 1px;
+			margin: -0.5em 0;
+			padding: 0;
+			color: #ddd;
+			background-color: #ddd;
+			border: 0;
+	  }
+	  #footer {font-size:0.8em;text-align: center;color:#777;margin:2em 0 1em;padding:.3em}
+	  -->
+  </style>
+</head>
+<body>
+
+<div class="container">
+	<div id="content"></div>
+	<script type="text/javascript">
+	
+	var values = [43.96, 50.92, 45.96, 45.44, 44.95, 46.64, 44.16, 45.63, 40.4, 45.16, 44.21, 46.27, 47.93, 44.77, 45.1, 45.94, 45.53, 44.79, 44.84, 45.84, 44.22, 44.55, 45.35, 45.8, 43.67, 45.17, 47.88, 45.07, 47.95, 46.26, 44.07, 47.07, 43.73, 44.33, 46.88, 44.66, 45.16, 46.05, 44.43, 43.9, 43.33, 44.8, 47.24, 44.88, 45.43, 46.89, 46.37, 44.67, 46.62, 46.43, 45.8, 47.05];
+	var gs = new geostats(values);
+	var breaks = gs.getClassJenks(5);
+
+	console.log('Values : ' + values);
+	console.log('Bounds : ' + breaks);
+	
+	var content = '';
+	content += '<p><strong>Values : </strong><br />' + values + '</p>';
+	
+	content += '<p><strong>Bounds : </strong><br />' + breaks + '</p>';
+	
+	content += '<p><strong>Testing types on each values : </strong></p>';
+	content += '<ul>';
+	
+	var arrayLength = breaks.length;
+	for (var i = 0; i < arrayLength; i++) {
+				if (typeof breaks[i] === 'string') {
+					console.log('ISSUE : ' + breaks[i] + ' is a string.');
+					content += '<li>Value : ' + breaks[i] + ' (type : ' + typeof breaks[i]  + ') - <strong>test failed</strong></li>';
+				} else {
+					console.log(breaks[i] + ' type : ' + typeof breaks[i]  + '.');
+					content += '<li>Value : ' + breaks[i] + ' (type : ' + typeof breaks[i]  + ') - test passed</li>';
+				}
+	}
+	content += '</ul>';
+	
+	jQuery('#content').html(content);
+
+	</script>
+	</div>
+</div>
+</body>
+</html>

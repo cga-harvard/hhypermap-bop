@@ -1,0 +1,26 @@
+{
+  "bf": [
+    "recip(sum(abs(sub(Area,98559.04047048658)),.01),1,1000,1000)^70",
+    "product(sum(map(sum(map(sub(-150.29296875,MinX),0,400,1,0),map(sub(-150.29296875,MaxX),-400,0,1,0),map(sub(-40.98621566024132,MinY),0,400,1,0),map(sub(-40.98621566024132,MaxY),-400,0,1,0)),4,4,1,0),map(sum(map(sub(-150.29296875,MinX),0,400,1,0),map(sub(-150.29296875,MaxX),-400,0,1,0),map(sub(1.4210854715202004e-14,MinY),0,400,1,0),map(sub(1.4210854715202004e-14,MaxY),-400,0,1,0)),4,4,1,0),map(sum(map(sub(-150.29296875,MinX),0,400,1,0),map(sub(-150.29296875,MaxX),-400,0,1,0),map(sub(40.986215660241356,MinY),0,400,1,0),map(sub(40.986215660241356,MaxY),-400,0,1,0)),4,4,1,0),map(sum(map(sub(0,MinX),0,400,1,0),map(sub(0,MaxX),-400,0,1,0),map(sub(-40.98621566024132,MinY),0,400,1,0),map(sub(-40.98621566024132,MaxY),-400,0,1,0)),4,4,1,0),map(sum(map(sub(0,MinX),0,400,1,0),map(sub(0,MaxX),-400,0,1,0),map(sub(1.4210854715202004e-14,MinY),0,400,1,0),map(sub(1.4210854715202004e-14,MaxY),-400,0,1,0)),4,4,1,0),map(sum(map(sub(0,MinX),0,400,1,0),map(sub(0,MaxX),-400,0,1,0),map(sub(40.986215660241356,MinY),0,400,1,0),map(sub(40.986215660241356,MaxY),-400,0,1,0)),4,4,1,0),map(sum(map(sub(150.29296875,MinX),0,400,1,0),map(sub(150.29296875,MaxX),-400,0,1,0),map(sub(-40.98621566024132,MinY),0,400,1,0),map(sub(-40.98621566024132,MaxY),-400,0,1,0)),4,4,1,0),map(sum(map(sub(150.29296875,MinX),0,400,1,0),map(sub(150.29296875,MaxX),-400,0,1,0),map(sub(1.4210854715202004e-14,MinY),0,400,1,0),map(sub(1.4210854715202004e-14,MaxY),-400,0,1,0)),4,4,1,0),map(sum(map(sub(150.29296875,MinX),0,400,1,0),map(sub(150.29296875,MaxX),-400,0,1,0),map(sub(40.986215660241356,MinY),0,400,1,0),map(sub(40.986215660241356,MaxY),-400,0,1,0)),4,4,1,0)),0.1111111111111111)^30",
+    "sum(recip(abs(sub(product(sum(MinX,MaxX),.5),0)),1,1000,1000),recip(abs(sub(product(sum(MinY,MaxY),.5),0)),1,1000,1000))^15",
+    "if(and(exists(MinX),exists(MaxX),exists(MinY),exists(MaxY)),map(sum(map(MinX,-300.5859375,300.5859375,1,0),map(MaxX,-300.5859375,300.5859375,1,0),map(MinY,-81.97243132048266,81.97243132048268,1,0),map(MaxY,-81.97243132048266,81.97243132048268,1,0)),4,4,1,0),0)^80"
+  ],
+  "fq": [
+    "{!frange l=0 incl=false cache=false}$intx",
+    "Area:[0 TO 400]",
+    "!(Area:1 AND MaxX:0 AND MaxY:0)",
+    "LayerDate:[0-01-01T00:00:00.0Z TO 1606-01-01T00:00:00.0Z]"
+  ],
+  "intx": "product(max(0,sub(min(300.5859375,MaxX),max(-300.5859375,MinX))),max(0,sub(min(81.97243132048268,MaxY),max(-81.97243132048266,MinY))))",
+  "facet": true,
+  "facet.heatmap": "bbox",
+  "facet.heatmap.format": "ints2D",
+  "facet.heatmap.geom": "[\"-300.5859375 -81.97243132048266\" TO \"300.5859375 81.97243132048268\"]",
+  "start": 0,
+  "rows": 0,
+  "sort": "score desc",
+  "qf": "LayerTitleSynonyms^0.2 ThemeKeywordsSynonymsIso^0.1 ThemeKeywordsSynonymsLcsh^0.1 PlaceKeywordsSynonyms^0.1 Publisher^0.1 Originator^0.1 Abstract^0.2",
+  "wt": "json",
+  "defType": "edismax",
+  "q": "*"
+}

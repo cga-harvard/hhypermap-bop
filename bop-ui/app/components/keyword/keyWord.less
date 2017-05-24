@@ -1,0 +1,50 @@
+@height: 26px;
+@height-min: 22px;
+
+.md-chips {
+    cursor: default;
+    border-radius: 4px;
+    display: inline;
+    height: @height;
+    line-height: @height;
+    margin-right: 4px;
+    padding: 0 8px;
+    float: left;
+    box-sizing: border-box;
+    max-width: 100%;
+    position: relative;
+    background: rgb(224,224,224);
+
+    button {
+        cursor: pointer;
+        -webkit-appearance: button;
+        text-align: center;
+        width: 20px;
+        height: @height;
+        min-width: 0;
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        margin: 0 -4px 4px 0px;
+        position: relative;
+        outline: none;
+        font-size: 16px;
+    }
+
+    .glyphicon {
+        color: rgb(66,66,66);
+    }
+}
+
+keyword.keyword-min .md-chips{
+        height: @height-min;
+        line-height: @height-min;
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 12px;
+        margin-top: 4px;
+
+        button {
+            height: @height-min;
+        }
+}

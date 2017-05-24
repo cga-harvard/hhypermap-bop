@@ -1,0 +1,16 @@
+<div class="col-md-12 component-padding"
+    ng-style="{'visibility': yLegendRange.length ? 'visible' : 'hidden'}"
+    style="padding: 0px 0px; margin-left: 30px; width: {{histogramBarsDimensions.histogrambarsWidth}}px">
+    <div class="y-legend" style="height: {{histogramBarsDimensions.barsheight}}px;">
+        <ul class="histogram-legend list-unstyled">
+            <li ng-repeat="y in yLegendRange track by $index">{{y}}</li>
+        </ul>
+    </div>
+    <div style="height: {{histogramBarsDimensions.barsheight}}px;" class="y-axis-wrap">
+        <rzslider class="y-axis" rz-slider-model="Yaxis.minValue" rz-slider-high="Yaxis.maxValue" rz-slider-options="Yaxis.options"></rzslider>
+    </div>
+
+    <div class="bar-graph" id="{{barId}}" ng-class="{disabled: slider.options.disabled}"></div>
+    <rzslider rz-slider-model="slider.minValue" rz-slider-high="slider.maxValue" rz-slider-options="slider.options"></rzslider>
+    <legend-histogram dimensions="histogramBarsDimensions"></legend-histogram>
+</div>

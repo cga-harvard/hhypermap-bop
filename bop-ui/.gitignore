@@ -1,0 +1,9 @@
+/node_modules
+npm-debug.log
+tmp
+
+/.grunt
+build
+reports/
+.DS_Store
+/config/appConfig.json

@@ -1,0 +1,81 @@
+{
+  "name": "ol3-google-maps",
+  "version": "0.12.3",
+  "description": "OpenLayers 3 Google Maps integration library",
+  "keywords": [
+    "map",
+    "mapping",
+    "ol3",
+    "google maps"
+  ],
+  "homepage": "http://mapgears.github.io/ol3-google-maps/",
+  "scripts": {
+    "pretest": "eslint src/",
+    "test": "node tasks/test.js"
+  },
+  "main": "dist/ol3gm.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mapgears/ol3-google-maps.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mapgears/ol3-google-maps/issues"
+  },
+  "browser": "dist/ol3gm.js",
+  "style": [
+    "css/ol3gm.css"
+  ],
+  "dependencies": {
+    "async": "~0.2.10",
+    "htmlparser2": "~3.7.1"
+  },
+  "devDependencies": {
+    "chai": "3.5.0",
+    "closure-util": "1.15.1",
+    "geojsonhint": "^1.0.0",
+    "eslint": "3.10.0",
+    "eslint-config-openlayers": "6.0.0",
+    "fs-extra": "~0.8.1",
+    "graceful-fs": "~3.0.2",
+    "jsdoc": "~3.4.0",
+    "mocha": "2.5.3",
+    "mocha-phantomjs-core": "^1.3.1",
+    "openlayers": "3.19.1",
+    "phantomjs-prebuilt": "2.1.7",
+    "nomnom": "~1.6.2",
+    "temp": "~0.7.0",
+    "walk": "~2.3.3"
+  },
+  "gitHead": "56544ed22817da3beb32440ec5e16588ef1934ff",
+  "_id": "ol3-google-maps@0.12.3",
+  "_shasum": "ba90dcbd9a314734dceda082137c6daa8d495d27",
+  "_from": "ol3-google-maps@latest",
+  "_npmVersion": "2.14.12",
+  "_nodeVersion": "4.2.6",
+  "_npmUser": {
+    "name": "adube",
+    "email": "adube@mapgears.com"
+  },
+  "dist": {
+    "shasum": "ba90dcbd9a314734dceda082137c6daa8d495d27",
+    "tarball": "https://registry.npmjs.org/ol3-google-maps/-/ol3-google-maps-0.12.3.tgz"
+  },
+  "maintainers": [
+    {
+      "name": "adube",
+      "email": "adube@mapgears.com"
+    },
+    {
+      "name": "samuellapointe",
+      "email": "samuellapointe@gmail.com"
+    }
+  ],
+  "_npmOperationalInternal": {
+    "host": "packages-18-east.internal.npmjs.com",
+    "tmp": "tmp/ol3-google-maps-0.12.3.tgz_1479131038054_0.9493168701883405"
+  },
+  "directories": {},
+  "_resolved": "https://registry.npmjs.org/ol3-google-maps/-/ol3-google-maps-0.12.3.tgz",
+  "readme": "ERROR: No README data found!"
+}

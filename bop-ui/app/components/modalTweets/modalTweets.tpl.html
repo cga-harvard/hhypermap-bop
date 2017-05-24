@@ -1,0 +1,26 @@
+<!-- Modal -->
+<div class="modal fade" id="closesttweets" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title" id="myModalLabel">
+            Closest tweets from [ {{coordinate[0] | number: 3}}, {{coordinate[1] | number: 3}} ]
+        </h4>
+      </div>
+      <div class="modal-body">
+          <div class="tweet-component">
+              <li ng-repeat="tweet in closestTweets" class="tweet" ng-click="sendToTweetStatus(tweet)">
+                <div class="list-item-text">
+                  <h3>@{{tweet.user_name}}</h3>
+                  <h4>{{tweet.text}}</h4>
+                  <p>{{tweet.created_at | date:'medium'}}</p>
+                </div>
+              </li>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>

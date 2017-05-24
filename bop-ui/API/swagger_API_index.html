@@ -1,0 +1,317 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>API doc created with swagger</title>
+    <style type="text/css">
+      body {
+	font-family: Trebuchet MS, sans-serif;
+	font-size: 15px;
+	color: #444;
+	margin-right: 24px;
+}
+
+h1	{
+	font-size: 25px;
+}
+h2	{
+	font-size: 20px;
+}
+h3	{
+	font-size: 16px;
+	font-weight: bold;
+}
+hr	{
+	height: 1px;
+	border: 0;
+	color: #ddd;
+	background-color: #ddd;
+	display: none;
+}
+
+.app-desc {
+  clear: both;
+  margin-left: 20px;
+}
+.param-name {
+  width: 100%;
+}
+.license-info {
+  margin-left: 20px;
+}
+
+.license-url {
+  margin-left: 20px;
+}
+
+.model {
+  margin: 0 0 0px 20px;
+}
+
+.method {
+  margin-left: 20px;
+}
+
+.method-notes	{
+	margin: 10px 0 20px 0;
+	font-size: 90%;
+	color: #555;
+}
+
+pre {
+  padding: 10px;
+  margin-bottom: 2px;
+}
+
+.http-method {
+ text-transform: uppercase;
+}
+
+pre.get {
+  background-color: #0f6ab4;
+}
+
+pre.post {
+  background-color: #10a54a;
+}
+
+pre.put {
+  background-color: #c5862b;
+}
+
+pre.delete {
+  background-color: #a41e22;
+}
+
+.huge	{
+	color: #fff;
+}
+
+pre.example {
+  background-color: #f3f3f3;
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+
+code {
+  white-space: pre;
+}
+
+.nickname {
+  font-weight: bold;
+}
+
+.method-path {
+  font-size: 1.5em;
+  background-color: #0f6ab4;
+}
+
+.up {
+  float:right;
+}
+
+.parameter {
+  width: 500px;
+}
+
+.param {
+  width: 500px;
+  padding: 10px 0 0 20px;
+  font-weight: bold;
+}
+
+.param-desc {
+  width: 700px;
+  padding: 0 0 0 20px;
+  color: #777;
+}
+
+.param-type {
+  font-style: italic;
+}
+
+.param-enum-header {
+width: 700px;
+padding: 0 0 0 60px;
+color: #777;
+font-weight: bold;
+}
+
+.param-enum {
+width: 700px;
+padding: 0 0 0 80px;
+color: #777;
+font-style: italic;
+}
+
+.field-label {
+  padding: 0;
+  margin: 0;
+  clear: both;
+}
+
+.field-items	{
+	padding: 0 0 15px 0;
+	margin-bottom: 15px;
+}
+
+.return-type {
+  clear: both;
+  padding-bottom: 10px;
+}
+
+.param-header {
+  font-weight: bold;
+}
+
+.method-tags {
+  text-align: right;
+}
+
+.method-tag {
+  background: none repeat scroll 0% 0% #24A600;
+  border-radius: 3px;
+  padding: 2px 10px;
+  margin: 2px;
+  color: #FFF;
+  display: inline-block;
+  text-decoration: none;
+}
+    </style>
+  </head>
+  <body>
+  <h1>Swagger Sample</h1>
+    <div class="app-desc">A sample swagger server</div>
+    <div class="app-desc">More information: <a href="https://helloreverb.com">https://helloreverb.com</a></div>
+    <div class="app-desc">Contact Info: <a href="hello@helloreverb.com">hello@helloreverb.com</a></div>
+
+    <div class="app-desc">BasePath:/</div>
+    <div class="license-info">All rights reserved</div>
+    <div class="license-url">http://apache.org/licenses/LICENSE-2.0.html</div>
+  <h2>Access</h2>
+
+  <h2><a name="__Methods">Methods</a></h2>
+  [ Jump to <a href="#__Models">Models</a> ]
+
+  <h2>Table of Contents </h2>
+  <div class="method-summary"></div>
+  <ol>
+  <li><a href="#search"><code><span class="http-method">get</span> /tweets/search</code></a></li>
+  </ol>
+
+  <div class="method"><a name="search"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="get"><code class="huge"><span class="http-method">get</span> /tweets/search</code></pre></div>
+    <div class="method-summary">Search/analytics endpoint; highly configurable. Not for bulk doc retrieval. (<span class="nickname">search</span>)</div>
+    <div class="method-notes">The q.* parameters qre query/constraints that limit the matching documents.  The d.* params control returning the documents. The a.* params are faceting/aggregations on a  field of the documents.  The *.limit params limit how many top values/docs to return.  Some of  the formatting and response structure has strong similarities with Apache Solr, unsurprisingly.</div>
+
+
+
+
+
+    <h3 class="field-label">Query parameters</h3>
+    <div class="field-items">
+      <div class="param">q.text (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; Constrains docs by keyword search query. </div><div class="param">q.time (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; Constrains docs by time range.  Either side can be &#39;*&#39; to signify open-ended. Otherwise it should either be in this format: 2013-03-01 or 2013-03-01T00:00:00 (both are equivalent). UTC time zone is implied. </div><div class="param">q.geo (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; A rectangular geospatial filter in decimal degrees going from the lower-left to the upper-right.  The coordinates are in lat,lon format. </div><div class="param">d.docs.limit (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; How many documents to return in the search results. default: 0</div><div class="param">d.docs.sort (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; How to order the documents before returning the top X. &#39;score&#39; is keyword search relevancy. &#39;time&#39; is time descending. &#39;distance&#39; is the distance between the doc and the middle of q.geo. default: score</div><div class="param">a.time.limit (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; Non-0 triggers time/date range faceting. This value is the maximum number of time ranges to return when a.time.gap is unspecified. This is a soft maximum; less will usually be returned. Note that a.time.gap effectively ignores this value. TODO WARNING: not implemented yet but must use non-0. See Solr docs for more details on the query/response format. default: 0</div><div class="param">a.time.gap (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; The consecutive time interval/gap for each time range.  Ignores a.time.limit </div><div class="param">a.time.filter (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; From what time range to divide by a.time.gap into intervals.  Defaults to q.time and otherwise 90 days. </div><div class="param">a.hm.limit (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; Non-0 triggers heatmap/grid faceting.  This number is a soft maximum on thenumber of cells it should have. There may be as few as 1/4th this number in return.  Note that a.hm.gridLevel can effectively ignore this value. The response heatmap contains a counts grid that can be null or contain null rows when all its values would be 0.   See Solr docs for more details on the response format. default: 0</div><div class="param">a.hm.gridLevel (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; To explicitly specify the grid level, e.g. to let a user ask for greater or courser resolution than the most recent request.  Ignores a.hm.limit. </div><div class="param">a.hm.filter (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash; From what region to plot the heatmap. Defaults to q.geo or otherwise the world. </div>
+    </div>  <!-- field-items -->
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#SearchResponse">SearchResponse</a>
+
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="heaader">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    successful operation
+        <a href="#SearchResponse">SearchResponse</a>
+  </div> <!-- method -->
+  <hr/>
+
+  <div class="up"><a href="#__Models">Up</a></div>
+  <h2><a name="__Models">Models</a></h2>
+  [ Jump to <a href="#__Methods">Methods</a> ]
+
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#DateFacet"><code>DateFacet</code></a></li>
+    <li><a href="#FacetValue"><code>FacetValue</code></a></li>
+    <li><a href="#Heatmap"><code>Heatmap</code></a></li>
+    <li><a href="#SearchResponse"><code>SearchResponse</code></a></li>
+  </ol>
+
+  <div class="model">
+    <h3 class="field-label"><a name="DateFacet">DateFacet</a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="field-items">
+      <div class="param">start (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> </div>
+<div class="param">end (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> </div>
+<div class="param">gap (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> </div>
+<div class="param">counts (optional)</div><div class="param-desc"><span class="param-type"><a href="#FacetValue">array[FacetValue]</a></span> </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3 class="field-label"><a name="FacetValue">FacetValue</a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="field-items">
+      <div class="param">value (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> </div>
+<div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3 class="field-label"><a name="Heatmap">Heatmap</a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="field-items">
+      <div class="param">gridLevel (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> </div>
+<div class="param">rows (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> </div>
+<div class="param">columns (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> </div>
+<div class="param">minX (optional)</div><div class="param-desc"><span class="param-type"><a href="#double">Double</a></span> </div>
+<div class="param">maxX (optional)</div><div class="param-desc"><span class="param-type"><a href="#double">Double</a></span> </div>
+<div class="param">minY (optional)</div><div class="param-desc"><span class="param-type"><a href="#double">Double</a></span> </div>
+<div class="param">maxY (optional)</div><div class="param-desc"><span class="param-type"><a href="#double">Double</a></span> </div>
+<div class="param">counts_ints2D (optional)</div><div class="param-desc"><span class="param-type"><a href="#array">array[array[Integer]]</a></span> </div>
+<div class="param">projection (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3 class="field-label"><a name="SearchResponse">SearchResponse</a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="field-items">
+      <div class="param">d.docs (optional)</div><div class="param-desc"><span class="param-type"><a href="#map">array[map[String, Object]]</a></span> </div>
+<div class="param">a.matchDocs (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> </div>
+<div class="param">a.time (optional)</div><div class="param-desc"><span class="param-type"><a href="#DateFacet">DateFacet</a></span> </div>
+<div class="param">a.hm (optional)</div><div class="param-desc"><span class="param-type"><a href="#Heatmap">Heatmap</a></span> </div>
+    </div>  <!-- field-items -->
+  </div>
+  </body>
+</html>

@@ -1,0 +1,50 @@
+    <div class="col-md-12 padding-search">
+        <div class="form-horizontal">
+            <div class="row">
+                <label class="control-label col-xs-2">From</label>
+                <div class="col-xs-4 datepicker-wrapper">
+                    <p class="input-group">
+                        <input type="text" class="form-control input-sm" uib-datepicker-popup ng-model="datepickerStartDate" is-open="startDate.opened"
+                            show-button-bar="false" datepicker-options="dateOptions" ng-required="true"
+                            ng-model-options="{timezone: 'UTC'}" ng-change="onChangeDatepicker()" readonly/>
+                        <span class="input-group-btn">
+                            <button type="button" class="btn btn-default btn-sm" ng-click="openStartDate()"><i class="glyphicon glyphicon-calendar"></i></button>
+                        </span>
+                    </p>
+                </div>
+                <label class="control-label col-xs-1">To</label>
+                <div class="col-xs-4 datepicker-wrapper">
+                    <p class="input-group">
+                        <input type="text" class="form-control input-sm" uib-datepicker-popup ng-model="datepickerEndDate" is-open="endDate.opened"
+                            show-button-bar="false" datepicker-options="dateOptions" ng-required="true"
+                            ng-model-options="{timezone: 'UTC'}" ng-change="onChangeDatepicker()" readonly />
+                        <span class="input-group-btn">
+                            <button type="button" class="btn btn-default btn-sm" ng-click="openEndDate()"><i class="glyphicon glyphicon-calendar"></i></button>
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12 padding-search">
+        <div class="row">
+          <div class="date-picker-input">
+              <form ng-submit="onSubmitDateText()">
+                    <div class="form-group">
+                        <div class="col-xs-12">
+                            <div class="row searchtext" ng-class="{'searchtext-focus': focus}">
+                                <span class="input-group searchinputfield" id="searchinput">
+                                    <input class="md-input input-sm" type="text" ng-keyup="onKeyPress($event)" ng-model="dateString" ng-blur="focus=false" ng-focus="focus=true">
+                                    <span ng-click="doSearch()" class="input-group-addon border-search">
+                                        <i class="glyphicon glyphicon-search"></i>
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+              </form>
+
+          </div>
+        </div>
+    </div>

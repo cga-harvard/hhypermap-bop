@@ -1,0 +1,9 @@
+<div class="col-xs-12 padding-search">
+    <div class="input-group row searchtext searchinputfield" id="geospatialfilterinput" ng-class="{'searchtext-focus': focus}">
+        <input ng-model="filter.geo" ng-keypress="onKeyPress($event)" ng-click="onFocus()"
+        class="md-input" type="text" ng-keyup="onKeyPress($event)" ng-blur="focus=false" ng-focus="focus=true">
+        <span ng-click="doSearch()" class="input-group-addon border-search">
+            <i class="glyphicon glyphicon-search"></i>
+        </span>
+    </div>
+</div>

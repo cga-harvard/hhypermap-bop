@@ -1,0 +1,80 @@
+<div class="top-panel"></div>
+<div class="left-panel"></div>
+<!-- min: 1200 -->
+
+<div class="container-fluid" ng-if="fullscreen">
+    <div class="row">
+        <div class="container col-400-12 col-800-6 col-1200-4">
+            <card-wrapper>
+                <toolbar-search number-keywords="10"></toolbar-search>
+            </card-wrapper>
+
+            <card-wrapper>
+                <user-filter></user-filter>
+            </card-wrapper>
+
+            <card-wrapper class="tweetlist-lg">
+                <tweetlist></tweetlist>
+            </card-wrapper>
+
+            <button-panel></button-panel>
+        </div>
+
+        <div class="container col-400-12 col-800-12 col-1200-8 col-1600-9">
+            <div class="row">
+                <div class="container col-400-12 col-1200-8 col-1600-6 time-components-lg">
+                    <div class="row">
+                        <div class="container col-400-12 col-1600-3">
+                            <card-wrapper>
+                                <date-picker></date-picker>
+                            </card-wrapper>
+                        </div>
+                        <div class="container col-400-12 col-1600-3">
+                            <card-wrapper>
+                                <time-histogram barId="inbar"></time-histogram>
+                            </card-wrapper>
+                        </div>
+                    </div>
+                </div>
+                <div class="container col-400-12 col-1600-3">
+                        <tweet-panel></tweet-panel>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- min: 800px and max:1200 -->
+
+<div class="container-fluid" ng-if="!fullscreen">
+    <div class="row">
+       <div class="container col-400-12 col-800-6 col-1200-4 sidebar-tools-md">
+           <card-wrapper>
+               <toolbar-search number-keywords="10"></toolbar-search>
+           </card-wrapper>
+
+           <card-wrapper>
+               <user-filter></user-filter>
+           </card-wrapper>
+
+            <card-wrapper>
+                <date-picker></date-picker>
+            </card-wrapper>
+
+            <card-wrapper>
+                <time-histogram barId="inbar"></time-histogram>
+            </card-wrapper>
+
+            <card-wrapper>
+                <tweetlist></tweetlist>
+            </card-wrapper>
+
+            <tweet-panel></tweet-panel>
+
+            <button-panel></button-panel>
+       </div>
+    </div>
+</div>
+
+<modal-tweets></modal-tweets>

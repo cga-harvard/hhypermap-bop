@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+</head>
+<title>Statistics - classification methods comparison - based on geostats.js</title>
+<meta charset="utf-8">
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+<script src="./lib/geostats.js"></script>
+<style>
+
+body {
+	    font-family: "Lucida Sans Unicode", "Lucida Grande", Verdana, Arial, Helvetica, sans-serif;
+	    color:#333;
+	    font-size: 0.8em;
+	    background-color: #F7F7F7;
+	  }
+#header {margin:2em 0;}
+h1 {color:#B5B1B1;text-shadow: #fff 2px 2px 0px;text-align: center;}
+a {color:#F47FE7;font-weight: bold;text-shadow: #fff 2px 2px 0px;text-decoration: none;}
+	  a:hover {color:#514F51;}
+svg {
+	border:1px solid #ccc;
+	-webkit-border-radius: 2px;
+	-moz-border-radius: 2px;
+	border-radius: 2px;
+	background-color: white;
+}
+#container {
+	width: 80%;
+	margin:0 auto;
+	text-align: center;
+}
+
+p.instruction {font-weight: bold;font-size:1.4em;}
+p.serie {word-wrap: break-word;width:700px;margin:1em auto;}
+p.method { color:#333;margin-bottom:5em;}
+p.contact {color:#666;font-size:0.9em;margin:1em 0 0.5em 0;}
+.bar rect {
+  fill: #F77676;
+  shape-rendering: crispEdges;
+}
+
+.bar text {
+  fill: #fff;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.class-bounds {
+	 fill: none;
+  stroke: #4773D8;
+  stroke-width: 2px;
+}
+
+textarea#userInput {width:90%;min-height:100px;}
+
+#histograms {margin-top:1.5em}
+
+form#inputs {
+	-webkit-border-radius: 2px;
+	-moz-border-radius: 2px;
+	border-radius: 2px;
+	background-color: white;
+	padding:1em;
+	width: 650px;
+	margin:0 auto;
+}
+
+.button {
+    background: none repeat scroll 0 0 #efefef;
+    border: 0 none;
+    border-radius: 2px;
+    color: #ffffff !important;
+    cursor: pointer;
+    display: inline-block;
+    font-family: Arial,sans-serif;
+    font-weight: bold;
+    line-height: 20px;
+    margin-bottom: 0;
+    margin-top: 10px;
+    padding: 1em 2em;
+    text-transform: none;
+    transition: all 0.3s ease 0s;
+    width: auto;
+}
+.button:hover {
+    text-decoration: none !important;
+}
+.button.red {
+    background: none repeat scroll 0 0 #e0645c;
+    color: white;
+}
+.button.red:hover {
+    background: none repeat scroll 0 0 #999999;
+    color: white;
+}
+.button.dark {
+    background: none repeat scroll 0 0 #444444;
+    color: white;
+}
+.button.dark:hover {
+    background: none repeat scroll 0 0 #2db6cf;
+    color: white;
+}
+.button.light {
+    background: none repeat scroll 0 0 #999999;
+    color: white;
+}
+.button.light:hover {
+    background: none repeat scroll 0 0 #444444;
+    color: white;
+}
+.button.green {
+    background: none repeat scroll 0 0 #46b98a;
+    color: white;
+}
+.button.green:hover {
+    background: none repeat scroll 0 0 #444444;
+    color: white;
+}
+.button.blue {
+    background: none repeat scroll 0 0 #2db6cf;
+    color: white;
+}
+.button.blue:hover {
+    background: none repeat scroll 0 0 #444444;
+    color: white;
+}
+
+</style>
+</head>
+<body>
+<div id="container">
+<div id="header">
+<h1>Classification methods comparison - based on <a href="https://github.com/simogeo/geostats">geostats.js</a> (beta / draft)</h1>
+<h2>Choose the right one and understand why</h2>
+</div>
+<p><strong>Serie :</strong></p><p class="serie"></p>
+
+<form action="" id="inputs">
+
+<p class="instruction">Use random data :</p>
+
+<p>
+<label for="nbClasss">Number of values : </label>
+<select name="nbValues" id="nbValues">
+	  <option value="-1">-- Select --</option>
+    <option value="100" selected>100</option>
+    <option value="300">300</option>
+    <option value="500">500</option>
+    <option value="1000">1000</option>
+    <option value="2000">2000</option>
+</select>
+</p>
+<p>
+<input type="button" id="generateIntSeries" value="Generate random Integer serie" class="button blue" /> 
+<input type="button" id="generateFloatSeries" value="Generate random Float serie"  class="button blue" />
+</p>
+
+<p class="instruction">Or paste your own data (<a href="#" id="clear">clear</a>) :</p>
+<p class="">You can enter both raw serie (comma separated values) and geoJSON objects (<a href="#" id="jsonsample">load sample</a>)</p>
+<p>
+	<textarea id="userInput"></textarea>
+</p>
+<p>
+<label for="json_field">if JSON, specify field target : </label>
+<input type="text" id="json_field" value="" />
+</p>
+
+<p class="instruction">Specifiy the class number :</p>
+<p>
+<label for="nbClasss">Number of classes : </label>
+<select name="nbClasss" id="nbClasss">
+	  <option value="-1">-- Select --</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5" selected>5</option>
+    <option value="6">6</option>
+    <option value="7">7</option>
+    <option value="8">8</option>
+    <option value="9">9</option>
+</select>
+</p>
+
+
+<input type="button" id="updateHistograms" value="Update Histogramms !" class="button green" />
+<p class="contact">Any bugs, questions or remarks, send me a mail to : simon [_AT_] empreinte-urbaine.eu</p>
+</form>
+
+<p>Classification bounds are in blue dotted lines.</p>
+
+<div id="histograms"></div>
+
+</div>
+<script>
+// https://github.com/mbostock/d3/wiki/Histogram-Layout
+// http://bl.ocks.org/mbostock/1624660
+// http://bl.ocks.org/mbostock/3048450
+// See also https://github.com/eoinmurray/histogram
+
+
+// http://stackoverflow.com/questions/1527803/generating-random-numbers-in-javascript-in-a-specific-range
+/**
+ * Returns a random number between min (inclusive) and max (exclusive)
+ */
+ 
+function getRandomArbitrary(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+/**
+ * Returns a random integer between min (inclusive) and max (inclusive)
+ * Using Math.round() will give you a non-uniform distribution!
+ */
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function round2dec(num) {
+	return Math.round(num * 100) / 100;
+}
+
+/**
+ * Inputs
+ */
+ 
+var cell = 20; // nombre de divisions entre valeur minimal et maximal
+var min,max; // valeur minimale et maximale, déterminée dynamiquement ensuite
+//var number_of_values = 100; // nombre de valeur à générer aléatoirement
+var values = []; // tableau de valeurs
+//var classNb = 5;	// Nombre de classe pour discrétisation
+
+
+function generate( serie, classNb ) {
+	
+	
+	max = serie.max();
+	min = serie.min();
+		
+	console.log('Min/max values : ' + min + '/' + max);
+	
+	
+	
+	serie.getClassQuantile(classNb);
+	generate_histogram('quantile', serie, classNb);
+	
+	
+	serie.getClassEqInterval(classNb);
+	generate_histogram('eqInterval', serie, classNb);
+	
+	
+	serie.getClassJenks(classNb);
+	generate_histogram('jenks', serie, classNb);
+	
+	
+	serie.getClassGeometricProgression(classNb);
+	generate_histogram('gProgression', serie, classNb);
+	
+	
+	serie.getClassArithmeticProgression(classNb);
+	generate_histogram('aProgression', serie, classNb);
+	
+	serie.getClassStdDeviation(classNb);
+	generate_histogram('stDeviation', serie, classNb);
+
+}
+
+
+function generate_histogram(name, serie, classNb) {
+	
+	// we adapt cell_div dynamically if needed 
+	if((max - min) <= cell) cell_div = (max - min);
+	else cell_div = cell;
+	
+	// @todo - A supprimer ?
+			// en fonction du problème de bins
+	if((max - min) %2 == 1) maxbound = max + 1; else maxbound = max;
+
+	console.log("cell division : " + cell_div);
+	
+	// A formatter for counts.
+	var formatCount = d3.format(",.0f");
+
+	var margin = {top: 10, right: 30, bottom: 30, left: 30},
+	    width = 650 - margin.left - margin.right,
+	    height = 450 - margin.top - margin.bottom;
+
+	var x = d3.scale.linear()
+	    .domain([min, max])
+	    .range([0, width]);
+
+	tickArray = d3.range(max + 1).map(x);
+	
+	// Generate a histogram using cell var uniformly-spaced bins.
+	// @todo having a bug with small range data 
+	// http://stackoverflow.com/questions/20367899/d3-js-controlling-ticks-and-bins-on-a-histogram
+	// https://github.com/mbostock/d3/wiki/Histogram-Layout
+	console.log('------------');
+	abins = x.ticks(cell_div);
+/* 	
+	abins.push( max); */
+	// console.log(x.ticks(cell_div));
+	// abins =  [3,5,7,9,11,13,15,17,19,21,23]
+	var data = d3.layout.histogram()
+	    .bins(cell_div) // number of cells in the graphs
+	    (serie.serie); // return serie as array
+	    
+	var y = d3.scale.linear()
+	    .domain([0, d3.max(data, function(d) { return d.y; })])
+	    .range([height, 0]);
+
+	var xAxis = d3.svg.axis()
+	    .scale(x)
+	    .orient("bottom");
+
+	var svg = d3.select("#histograms").append("svg")
+	    .attr("width", width + margin.left + margin.right)
+	    .attr("height", height + margin.top + margin.bottom)
+	    .attr("id", name)
+	    .attr("data-title", serie.method)
+	    .attr("data-bounds", serie.bounds)
+	    .attr("data-min", serie.min())
+	    .attr("data-max", serie.max())
+	    .attr("data-pop", serie.pop())
+	 		.append("g")
+	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	var bar = svg.selectAll(".bar")
+	    .data(data)
+	  	.enter().append("g")
+	    .attr("class", "bar")
+	    .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+	    
+	// ON créer les bornes de discrétisation
+	// voir http://jsbin.com/gisinomo/1/edit?html,js,output
+	var bounds = serie.bounds;
+	
+	for ( i = 0; i < bounds.length; i++ ) {
+	    
+		var line = {
+			    'x1':function(d) { return x(bounds[i]); },
+			    'y1':0,
+			    'x2':function(d) { return x(bounds[i]); },
+			    'y2':height,
+			    }
+
+
+		svg.append("svg:line")
+			.attr("x1", line.x1)
+			.attr("y1", line.y1)
+			.attr("x2", line.x2)
+			.attr("y2", line.y2)
+			.attr("class","class-bounds")
+			.style("stroke-dasharray", ("3, 3"))
+			.attr('title', 'Class bound : ' + bounds[i]);
+		
+	}
+
+	bar.append("rect")
+	    .attr("x", 1)
+	    .attr("width", x(data[0].dx) - 1)
+	    .attr("height", function(d) { return height - y(d.y); });
+
+	bar.append("text")
+	    .attr("dy", ".75em")
+	    .attr("y", 6)
+	    .attr("x", x(data[0].dx) / 2)
+	    .attr("text-anchor", "middle")
+	    .text(function(d) { return formatCount(d.y); });
+
+	svg.append("g")
+	    .attr("class", "x axis")
+	    .attr("transform", "translate(0," + height + ")")
+	    .call(xAxis);
+
+}
+
+$(function() {
+	
+	$('#generateIntSeries').click(function () {
+		
+		var values = [];
+		var nbValues = $( "#nbValues" ).val();
+		
+		if(nbValues != -1 ) number_of_values = nbValues;
+		else {
+			alert('Please select number of values.');
+			return;
+		}
+		
+		for ( i = 0; i < number_of_values; i++ ) {
+			values.push(getRandomInt(1, 100));
+		}
+		
+		$('p.serie').text(values.join(','));
+		
+	});
+	
+	$('#generateFloatSeries').click(function () {
+		
+		var values = [];
+		var nbValues = $( "#nbValues" ).val();
+		
+		if(nbValues != -1 ) number_of_values = nbValues;
+		else {
+			alert('Please select number of values.');
+			return;
+		}
+		
+		for ( i = 0; i < number_of_values; i++ ) {
+			values.push(getRandomArbitrary(0, 100));
+		}
+		
+		$('p.serie').text(values.join(','));
+		
+	});
+	
+	$('#clear').click(function (event) {
+		
+		event.preventDefault();
+		$('textarea#userInput').val('');
+		
+	});
+	
+	$('#updateHistograms').click(function () {
+		
+		var nbClass = $( "#nbClasss" ).val();
+		if(nbClass == -1) {
+			alert('Please select number of classes.');
+			return;
+		}
+
+		// user input is empty, we use generated data
+		if($('textarea#userInput').val() == '') {
+			
+			var values = $('p.serie').text().replace(' ', '').split(',');
+			
+		} else {
+			
+			var data = $('textarea#userInput').val();
+			
+			// check if it is an object
+			if(data.search('{') !== -1) {
+			
+				var res = jQuery.parseJSON(data);
+				if(typeof res =='object')
+				{
+					//It is JSON
+					if($('#json_field').val() == '') {
+						alert('Since you provide JSON you must target the desired field !');
+						return;
+					} else {
+						data = [];
+						var field = $('#json_field').val();
+
+						// we test the field value to see if it exists or not
+						if (typeof res.features[0].properties[field] == "undefined") {
+							alert('It seems the provided field "'+ field + '" does not exist');
+							return;
+						}
+						$.each(res.features, function(i,feature){
+			   				data.push(feature.properties[field]);
+			   				// console.log(feature);
+			   			});
+						data = data.join(',');
+					}
+				  
+				} else {
+				  if(res === false) {
+				     //the response was a string "false", parseJSON will convert it to boolean false
+				  } else {
+				    //the response was something else
+				  }
+				}
+				
+			}
+			
+			// we update the content based on new values - string format
+			$('p.serie').text(data);
+			var values = data.replace(' ', '').split(',');
+			
+		}
+		
+		// we parse values as float
+		values = values.map(parseFloat);
+		
+		serie = new geostats(values);
+		serie.setPrecision(2);
+		
+		console.log('Serie : ');
+		console.log(serie.sorted());
+
+		// we remove graph if they alreay exists
+		$('#histograms').empty();
+		
+		// we generate graphs
+		generate(serie, nbClass);
+
+		
+		// we display used methods 
+		$('body').find('svg').each(function () {
+			
+			// we format bounds
+			var b = $(this).attr('data-bounds');
+			b = b.split(',').map(round2dec).join(', ');
+
+			$(this).after('<p class="method">classification method : <strong>' + $(this).attr('data-title') + 
+					'</strong><br />Bounds : ' + b + ' (min value : ' + $(this).attr('data-min') + 
+							' - max value : ' + $(this).attr('data-max') + 
+							' - population : ' + $(this).attr('data-pop') +')</p>');
+		});
+		
+	});
+	
+	$('#jsonsample').click(function ( event ) {
+		event.preventDefault();
+		
+		var json = null;
+		
+		// Problème avec ces valeurs min : 3 - max 22
+		var url = 'https://gist.githubusercontent.com/simogeo/7a298559a55be034aea8/raw/308f2979cec3da7a8dafb6a34b2c036fa08f750f/bati.json';
+		var url = 'https://gist.githubusercontent.com/simogeo/dc08d3a244d1c5cdfad2/raw/3a073722becaf4ac2da57a6c8b1a97aaf915827d/bati_ok.json';
+		
+   $.ajax({
+	       'async': false,
+	       'global': false,
+	       'url': url,
+	       'dataType': "text",
+	       'success': function (data) {
+	           // json = data;
+	           $('textarea#userInput').val(data);
+	           $('#json_field').val('height');
+	       }
+	    });
+	    
+	});
+	
+	$("form").submit(function( event ) {
+		event.preventDefault();
+		$('#updateHistograms').click();
+	});
+	
+	
+	// Init page 
+	$('#generateIntSeries').click();
+	$('#updateHistograms').click();
+	
+	
+});
+	
+</script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-16897542-6']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</body>
+</html>

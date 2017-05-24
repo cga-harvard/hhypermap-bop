@@ -1,0 +1,118 @@
+.tweet:hover {
+    background-color: #ebf3f9;
+}
+.tweet {
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    position: relative;
+    min-height: 51px;
+    padding: 10px 15px;
+    margin: 0 5px 0 5px;
+    list-style: none;
+}
+
+.tweet-component {
+    overflow-y: auto;
+    margin:-10px 0 0 0;
+}
+
+.height-tweet {
+    height: 260px;
+    overflow-y: auto;
+}
+
+li .tweet {
+  list-style: none;
+}
+
+.list-item-text h3 {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .01em;
+    margin: 0;
+    line-height: 1.2em;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: #292f33;
+}
+
+.list-item-text h4 {
+    font-size: 12px;
+    letter-spacing: .01em;
+    margin: 3px 0 1px;
+    font-weight: 400;
+    line-height: 18px;
+    overflow: hidden;
+    white-space: pre-wrap;
+    text-overflow: ellipsis;
+    word-wrap: break-word;
+}
+
+.list-item-text p{
+    font-size: 11px;
+    font-weight: 200;
+    letter-spacing: .01em;
+    margin: 0;
+    line-height: 1.6em;
+    color: #337ab7;
+}
+
+.no-info {
+    font-size: 150%;
+    text-align: center;
+    color: #87898c;
+}
+.tweet-component .no-info {
+    padding-top: 10px;
+}
+
+.count-padding {
+    padding: 10px 20px;
+    margin-bottom: -10px;
+    text-align: right;
+    font-weight: 200;
+    color: #337ab7;
+}
+
+.dl-horizontal dt {
+   width: 110px;
+   color: #fff;
+   font-weight: 200;
+   font-size: 0.8500em;
+   text-transform: uppercase;
+}
+.dl-horizontal dd {
+   margin-left: 120px;
+   font-weight: 200;
+   font-size: 0.8500em;
+   color: #fff;
+}
+.list-group {
+   margin-top: 4px;
+}
+.list-group-item {
+    padding: 5px 15px;
+    border: 0px;
+    margin-bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+}
+.list-group-item:first-child {
+    padding-top: 15px;
+}
+.list-group-item:last-child {
+    padding-bottom: 15px;
+}
+@media (min-width: 800px) {
+    .tweet-detail-panel {
+        position: fixed;
+        right: 60px;
+        bottom: 0px;
+        width: 393px;
+   }
+}
+@media (max-width:800px) {
+    .tweet-detail-panel {
+        display: none;
+   }
+}
