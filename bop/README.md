@@ -1,12 +1,4 @@
-This is the "BOP" part of the project.  But hey isn't the entire project
- source tree the BOP, you might ask?  This is the subject of some internal
- debate/confusion. Technically no; in particular the
- tweet harvesting, Kafka process, and enrichment are not, even though
- some of this was established as a part of the BOP development effort.
- The "core of the BOP" may add clarity
- as that is definitely what's in this directory here. Perhaps this directory
- should be renamed to "bop-core" or just "core" so as to not confuse it
- with related things.
+Bop-core is the Solr/Ingester and Swagger webservice part of the project.     
 
 Dependencies: Operationally, we expect a Kafka topic to consume from.  But
  from a software/code/config standpoint, this module also depends on
