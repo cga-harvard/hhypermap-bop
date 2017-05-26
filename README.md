@@ -1,7 +1,7 @@
 Overview
 ========
 
-The goal of the BOP is to provide a proof-of-concept platform designed to lower the
+The goal of the BOP is to provide a prototype platform designed to lower the
  barrier for researchers who need to access big streaming spatio-temporal datasets.  
  
 The BOP is a project run by the Harvard Center for Geographic Analysis (CGA) with funding by the Sloan Foundation.
