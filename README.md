@@ -4,7 +4,8 @@ Overview
 The goal of the BOP is to provide a prototype platform designed to lower the
  barrier for researchers who need to access big streaming spatio-temporal datasets.  
  
-The BOP is a project run by the Harvard Center for Geographic Analysis (CGA) with funding by the Sloan Foundation.
+The BOP is a project run by the Harvard Center for Geographic Analysis (CGA) with funding by the Sloan Foundation. It was originally conceived
+by Ben Lewis and David Smiley as a way to provide interactive visualization capabilities for very large geospatial datasets within traditional data archives such as Harvard Dataverse.
 It is being developed specifically to provide a big data API to the Harvard Dataverse and Harvard WorldMap platforms.
 The platform is loaded with streaming geo-referenced tweets but a similar dataset could, with some tweaking, be substituted.
 Hosting of the BOP is being provided by Massachusetts Open Cloud.
